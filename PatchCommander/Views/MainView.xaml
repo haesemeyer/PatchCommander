@@ -1,0 +1,45 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:WpfTestBed.ViewModels"
+             xmlns:local="clr-namespace:WpfTestBed.Views"
+             xmlns:GUI="clr-namespace:MHApi.GUI"
+             xmlns:ni="http://schemas.ni.com/controls/2009/xaml/presentation"
+             x:Class="WpfTestBed.Views.MainView"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.Resources>
+        <GUI:NegateBoolConverter x:Key="NegateBoolConverter"/>
+        <vm:MainViewModel x:Key="mvmDataSource"/>
+    </UserControl.Resources>
+    <UserControl.DataContext>
+        <Binding Source="{StaticResource mvmDataSource}" x:Name="ViewModel" x:FieldModifier="public"/>
+    </UserControl.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="41*"/>
+            <RowDefinition Height="217*"/>
+            <RowDefinition Height="42*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.RowSpan="2" Background="#FF203E8D">
+
+            <ni:Graph Name="Da_Data" Margin="5.232,56,10,17.116" DataSource="{Binding PlotData}">
+                <ni:Graph.Axes>
+                    <ni:AxisDouble x:Name="xScale" Range="0,100" Orientation="Horizontal" MinorDivisions="{x:Null}" Adjuster="ContinuousChart" InteractionMode="None"/>
+                    <ni:AxisDouble x:Name="yScale" Range="-5,5" Orientation="Vertical" MinorDivisions="{x:Null}" Adjuster="None" InteractionMode="None">
+                        <ni:AxisDouble.MajorDivisions>
+                            <ni:RangeLabeledDivisions/>
+                        </ni:AxisDouble.MajorDivisions>
+                        <ni:AxisDouble.MajorGridLines>
+                            <ni:GridLines/>
+                        </ni:AxisDouble.MajorGridLines>
+                    </ni:AxisDouble>
+                </ni:Graph.Axes>
+            </ni:Graph>
+
+        </Grid>
+        <Button x:Name="button" Content="Start/Stop" Margin="95.93,18.134,105.814,3.891" Grid.Row="2" d:LayoutOverrides="Height" Click="hard_click" IsEnabled="{Binding HasNoUserText, Converter={StaticResource NegateBoolConverter}, Mode=OneWay}"/>
+    </Grid>
+</UserControl>
