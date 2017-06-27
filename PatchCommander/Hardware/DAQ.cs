@@ -115,11 +115,11 @@ namespace PatchCommander.Hardware
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1Read, "Electrode1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2Read, "Electrode2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.Timing.ConfigureSampleClock("", 2000, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
-            AnalogMultiChannelReader dataReader = new AnalogMultiChannelReader(readTask.Stream);
             try
             {
                 readTask.Start();
-                while (!stop.WaitOne())
+                AnalogMultiChannelReader dataReader = new AnalogMultiChannelReader(readTask.Stream);
+                while (!stop.WaitOne(0))
                 {
                     double[,] read = dataReader.ReadMultiSample(10);
                     ReadDone.Invoke(read);
@@ -128,6 +128,7 @@ namespace PatchCommander.Hardware
             finally
             {
                 readTask.Stop();
+                readTask.Dispose();
             }
         }
 
