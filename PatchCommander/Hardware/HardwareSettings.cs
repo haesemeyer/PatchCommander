@@ -12,9 +12,9 @@ namespace PatchCommander.Hardware
         {
             public const string DeviceName = "Dev2";
 
-            public const string Ch1Read = "ao0";
+            public const string Ch1Read = "ai0";
 
-            public const string Ch2Read = "ao1";
+            public const string Ch2Read = "ai1";
         }
     }
 }
