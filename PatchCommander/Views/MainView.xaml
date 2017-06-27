@@ -9,7 +9,7 @@
              xmlns:ni="http://schemas.ni.com/controls/2009/xaml/presentation"
              x:Class="WpfTestBed.Views.MainView"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="300" d:DesignWidth="300" Width="1000" Height="900">
     <UserControl.Resources>
         <GUI:NegateBoolConverter x:Key="NegateBoolConverter"/>
         <vm:MainViewModel x:Key="mvmDataSource"/>
@@ -19,27 +19,22 @@
     </UserControl.DataContext>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="41*"/>
-            <RowDefinition Height="217*"/>
-            <RowDefinition Height="42*"/>
+            <RowDefinition Height="208*"/>
+            <RowDefinition Height="17*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.RowSpan="2" Background="#FF203E8D">
-
-            <ni:Graph Name="Da_Data" Margin="5.232,56,10,17.116" DataSource="{Binding PlotData}">
-                <ni:Graph.Axes>
-                    <ni:AxisDouble x:Name="xScale" Range="0,100" Orientation="Horizontal" MinorDivisions="{x:Null}" Adjuster="ContinuousChart" InteractionMode="None"/>
-                    <ni:AxisDouble x:Name="yScale" Range="-5,5" Orientation="Vertical" MinorDivisions="{x:Null}" Adjuster="None" InteractionMode="None">
-                        <ni:AxisDouble.MajorDivisions>
-                            <ni:RangeLabeledDivisions/>
-                        </ni:AxisDouble.MajorDivisions>
-                        <ni:AxisDouble.MajorGridLines>
-                            <ni:GridLines/>
-                        </ni:AxisDouble.MajorGridLines>
-                    </ni:AxisDouble>
-                </ni:Graph.Axes>
-            </ni:Graph>
-
-        </Grid>
-        <Button x:Name="button" Content="Start/Stop" Margin="95.93,18.134,105.814,3.891" Grid.Row="2" d:LayoutOverrides="Height" Click="hard_click" IsEnabled="{Binding HasNoUserText, Converter={StaticResource NegateBoolConverter}, Mode=OneWay}"/>
+        <Button x:Name="btnStartStop" Content="Start/Stop" HorizontalAlignment="Left" Margin="209.061,21.861,0,26.178" Grid.Row="1" Width="75" RenderTransformOrigin="1.759,0.974" d:LayoutOverrides="Height" Click="btnStartStop_Click"/>
+        <ni:Graph Margin="0,10,465.733,0" Height="320.098" VerticalAlignment="Top" DataSource="{Binding PlotData}">
+            <ni:Graph.Axes>
+                <ni:AxisDouble x:Name="xScale" Range="0,100" Orientation="Horizontal" MinorDivisions="{x:Null}" Adjuster="ContinuousChart" InteractionMode="None"/>
+                <ni:AxisDouble x:Name="yScale" Range="-0.1,0.1" Orientation="Vertical" MinorDivisions="{x:Null}" Adjuster="None" InteractionMode="None">
+                    <ni:AxisDouble.MajorDivisions>
+                        <ni:RangeLabeledDivisions/>
+                    </ni:AxisDouble.MajorDivisions>
+                    <ni:AxisDouble.MajorGridLines>
+                        <ni:GridLines/>
+                    </ni:AxisDouble.MajorGridLines>
+                </ni:AxisDouble>
+            </ni:Graph.Axes>
+        </ni:Graph>
     </Grid>
 </UserControl>

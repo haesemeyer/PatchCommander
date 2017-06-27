@@ -8,8 +8,6 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="950" Width="1100">
     <Grid>
-
-        <Views:MainView Margin="441.542,359.627,335.224,244.27" d:LayoutOverrides="Width, Height"/>
-
+        <Views:MainView Margin="40.737,10,51.262,9"/>
     </Grid>
 </Window>

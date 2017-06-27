@@ -30,10 +30,9 @@ namespace WpfTestBed.Views
             _viewModel = ViewModel.Source as MainViewModel;
         }
 
-        private void hard_click(object sender, RoutedEventArgs e)
+        private void btnStartStop_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.SetDaText();
+            _viewModel.StartStop();
         }
-        
     }
 }
