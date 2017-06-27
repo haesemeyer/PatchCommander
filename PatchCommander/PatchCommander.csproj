@@ -62,6 +62,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Hardware\DAQ.cs" />
+    <Compile Include="Hardware\HardwareManager.cs" />
+    <Compile Include="Hardware\HardwareSettings.cs" />
     <Compile Include="mhapi\GUI\BoolToColorConverter.cs" />
     <Compile Include="mhapi\GUI\BoolToStartStopConverter.cs" />
     <Compile Include="mhapi\GUI\EnumMatchToBooleanConverter.cs" />
@@ -135,9 +138,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".gitignore" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
