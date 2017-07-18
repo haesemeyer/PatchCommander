@@ -30,9 +30,19 @@ namespace PatchCommander.Hardware
         WorkerT<object> _readThread;
 
         /// <summary>
+        /// The write thread for writing analog out samples
+        /// </summary>
+        WorkerT<Func<double, int, double[,]>> _writeThread;
+
+        /// <summary>
         /// Indicates whether we are currently acquiring/generating data
         /// </summary>
         bool _isRunning;
+
+        /// <summary>
+        /// Indicates to the read thread that the write thread is ready
+        /// </summary>
+        AutoResetEvent _writeThreadReady = new AutoResetEvent(false);
 
         #endregion
 
@@ -114,7 +124,8 @@ namespace PatchCommander.Hardware
             Task readTask = new Task("EphysRead");
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1Read, "Electrode1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2Read, "Electrode2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
-            readTask.Timing.ConfigureSampleClock("", 2000, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            readTask.Timing.ConfigureSampleClock("", HardwareSettings.DAQ.Rate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            _writeThreadReady.WaitOne();
             try
             {
                 readTask.Start();
@@ -132,6 +143,40 @@ namespace PatchCommander.Hardware
             }
         }
 
+        void WriteThreadRun(AutoResetEvent stop, Func<double, int, double[,]> sampleFunction)
+        {
+            Task writeTask = new Task("EphysWrite");
+            double[,] firstSamples = sampleFunction(0, HardwareSettings.DAQ.Rate);
+            if (firstSamples.GetLength(1) != HardwareSettings.DAQ.Rate)
+                throw new ApplicationException("Did not receive the required number of samples");
+            var nChannels = firstSamples.GetLength(0);
+            for (int i = 0; i < nChannels; i++)
+                writeTask.AOChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + string.Format("AO{0}", i), "", -10, 10, AOVoltageUnits.Volts);
+            writeTask.Timing.ConfigureSampleClock("ai/SampleClock", HardwareSettings.DAQ.Rate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            writeTask.Triggers.StartTrigger.ConfigureDigitalEdgeTrigger("ai/StartTrigger ", DigitalEdgeStartTriggerEdge.Rising);
+            writeTask.Stream.WriteRegenerationMode = WriteRegenerationMode.DoNotAllowRegeneration;
+            AnalogMultiChannelWriter dataWriter = new AnalogMultiChannelWriter(writeTask.Stream);
+            dataWriter.WriteMultiSample(false, firstSamples);
+            writeTask.Start();
+            _writeThreadReady.Set();
+            double second = 0;
+            try
+            {
+                while (!stop.WaitOne(800))
+                {
+                    double[,] samples = sampleFunction(++second, HardwareSettings.DAQ.Rate);
+                    System.Diagnostics.Debug.Assert(samples.GetLength(1) == HardwareSettings.DAQ.Rate);
+                    dataWriter.WriteMultiSample(false, samples);
+                }
+                System.Diagnostics.Debug.WriteLine("Left write loop");
+            }
+            finally
+            {
+                writeTask.Stop();
+                writeTask.Dispose();
+            }
+        }
+
         public void Dispose()
         {
             if(_readThread != null)
@@ -144,7 +189,7 @@ namespace PatchCommander.Hardware
         /// <summary>
         /// Starts acquisition and generation
         /// </summary>
-        public void Start()
+        public void Start(Func<double, int, double[,]> sampleFunction = null)
         {
             if (IsRunning)
             {
@@ -152,6 +197,12 @@ namespace PatchCommander.Hardware
                 return;
             }
             _readThread = new WorkerT<object>(ReadThreadRun, null, true, 3000);
+            if (sampleFunction != null)
+            {
+                _writeThread = new WorkerT<Func<double, int, double[,]>>(WriteThreadRun, sampleFunction, true, 3000);
+            }
+            else
+                _writeThreadReady.Set();
             IsRunning = true;
         }
 
@@ -162,10 +213,16 @@ namespace PatchCommander.Hardware
         {
             if (!IsRunning)
                 return;
+            _writeThreadReady.Reset();
             if(_readThread != null)
             {
                 _readThread.Dispose();
                 _readThread = null;
+            }
+            if (_writeThread != null)
+            {
+                _writeThread.Dispose();
+                _writeThread = null;
             }
             IsRunning = false;
         }

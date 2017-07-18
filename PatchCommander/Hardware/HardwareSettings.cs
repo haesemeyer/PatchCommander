@@ -15,6 +15,8 @@ namespace PatchCommander.Hardware
             public const string Ch1Read = "ai0";
 
             public const string Ch2Read = "ai1";
+
+            public const int Rate = 2000;
         }
     }
 }
