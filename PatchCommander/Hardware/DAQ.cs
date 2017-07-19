@@ -76,6 +76,8 @@ namespace PatchCommander.Hardware
             System.Diagnostics.Debug.WriteLine("Created mode writers");
             //At startup, set both main channels to VoltageClamp
             _channelModes = new ClampMode[2];
+            Channel1Mode = ClampMode.CurrentClamp;
+            Channel2Mode = ClampMode.CurrentClamp;
             Channel1Mode = ClampMode.VoltageClamp;
             Channel2Mode = ClampMode.VoltageClamp;
             System.Diagnostics.Debug.WriteLine("All modes set to voltage clamp");
