@@ -114,6 +114,7 @@ namespace PatchCommander.Hardware
                         _chModeWriters[0].WriteSingleSampleSingleLine(true, true);
                         _chModeTasks[0].Stop();
                     }
+                    _channelModes[0] = value;
                     RaisePropertyChanged(nameof(Channel1Mode));
                 }
             }
@@ -148,6 +149,7 @@ namespace PatchCommander.Hardware
                         _chModeWriters[1].WriteSingleSampleSingleLine(true, true);
                         _chModeTasks[1].Stop();
                     }
+                    _channelModes[1] = value;
                     RaisePropertyChanged(nameof(Channel2Mode));
                 }
             }
