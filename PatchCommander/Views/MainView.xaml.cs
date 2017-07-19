@@ -34,5 +34,7 @@ namespace WpfTestBed.Views
         {
             _viewModel.StartStop();
         }
+
+
     }
 }
