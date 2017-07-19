@@ -25,6 +25,17 @@ namespace PatchCommander.Hardware
         ClampMode[] _channelModes;
 
         /// <summary>
+        /// Writes samples to the digital channel controlling
+        /// channel modes
+        /// </summary>
+        DigitalSingleChannelWriter[] _chModeWriters;
+
+        /// <summary>
+        /// Digital out tasks to control channel modes
+        /// </summary>
+        Task[] _chModeTasks;
+
+        /// <summary>
         /// The read thread reading from analog in channels
         /// </summary>
         WorkerT<object> _readThread;
@@ -51,10 +62,23 @@ namespace PatchCommander.Hardware
         /// </summary>
         public DAQ()
         {
+            //Create digital out tasks and writers to control channel mode
+            _chModeTasks = new Task[2];
+            _chModeTasks[0] = new Task("Ch1Mode");
+            _chModeTasks[0].DOChannels.CreateChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1Mode, "", ChannelLineGrouping.OneChannelForAllLines);
+            System.Diagnostics.Debug.WriteLine("Created Ch1Mode task");
+            _chModeTasks[1] = new Task("Ch2Mode");
+            _chModeTasks[1].DOChannels.CreateChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2Mode, "", ChannelLineGrouping.OneChannelForAllLines);
+            System.Diagnostics.Debug.WriteLine("Created Ch2Mode task");
+            _chModeWriters = new DigitalSingleChannelWriter[2];
+            _chModeWriters[0] = new DigitalSingleChannelWriter(_chModeTasks[0].Stream);
+            _chModeWriters[1] = new DigitalSingleChannelWriter(_chModeTasks[1].Stream);
+            System.Diagnostics.Debug.WriteLine("Created mode writers");
             //At startup, set both main channels to VoltageClamp
             _channelModes = new ClampMode[2];
-            // Channel1Mode = ClampMode.VoltageClamp;
-            // Channel2Mode = ClampMode.VoltageClamp;
+            Channel1Mode = ClampMode.VoltageClamp;
+            Channel2Mode = ClampMode.VoltageClamp;
+            System.Diagnostics.Debug.WriteLine("All modes set to voltage clamp");
         }
 
         #region Properties
@@ -62,7 +86,7 @@ namespace PatchCommander.Hardware
         /// <summary>
         /// The recording mode of channel1
         /// </summary>
-        ClampMode Channel1Mode
+        public ClampMode Channel1Mode
         {
             get
             {
@@ -70,15 +94,33 @@ namespace PatchCommander.Hardware
             }
             set
             {
-                throw new NotImplementedException();
-                RaisePropertyChanged(nameof(Channel1Mode));
+                if (_chModeWriters == null || _chModeWriters[0] == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Can't set channel 1 mode without digital IO");
+                    return;
+                }
+                if (value != _channelModes[0])
+                {
+                    //write new value
+                    if (value == ClampMode.CurrentClamp)
+                    {
+                        _chModeWriters[0].WriteSingleSampleSingleLine(true, false);
+                        _chModeTasks[0].Stop();
+                    }
+                    else
+                    {
+                        _chModeWriters[0].WriteSingleSampleSingleLine(true, true);
+                        _chModeTasks[0].Stop();
+                    }
+                    RaisePropertyChanged(nameof(Channel1Mode));
+                }
             }
         }
 
         /// <summary>
         /// The recording mode of channel2
         /// </summary>
-        ClampMode Channel2Mode
+        public ClampMode Channel2Mode
         {
             get
             {
@@ -86,8 +128,26 @@ namespace PatchCommander.Hardware
             }
             set
             {
-                throw new NotImplementedException();
-                RaisePropertyChanged(nameof(Channel2Mode));
+                if (_chModeWriters == null || _chModeWriters.Length < 2 || _chModeWriters[1] == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Can't set channel 2 mode without digital IO");
+                    return;
+                }
+                if (value != _channelModes[1])
+                {
+                    //write new value
+                    if (value == ClampMode.CurrentClamp)
+                    {
+                        _chModeWriters[1].WriteSingleSampleSingleLine(true, false);
+                        _chModeTasks[1].Stop();
+                    }
+                    else
+                    {
+                        _chModeWriters[1].WriteSingleSampleSingleLine(true, true);
+                        _chModeTasks[1].Stop();
+                    }
+                    RaisePropertyChanged(nameof(Channel2Mode));
+                }
             }
         }
 
@@ -162,7 +222,7 @@ namespace PatchCommander.Hardware
             double second = 0;
             try
             {
-                while (!stop.WaitOne(800))
+                while (!stop.WaitOne(100))
                 {
                     double[,] samples = sampleFunction(++second, HardwareSettings.DAQ.Rate);
                     System.Diagnostics.Debug.Assert(samples.GetLength(1) == HardwareSettings.DAQ.Rate);
@@ -174,15 +234,6 @@ namespace PatchCommander.Hardware
             {
                 writeTask.Stop();
                 writeTask.Dispose();
-            }
-        }
-
-        public void Dispose()
-        {
-            if(_readThread != null)
-            {
-                _readThread.Dispose();
-                _readThread = null;
             }
         }
 
@@ -214,18 +265,54 @@ namespace PatchCommander.Hardware
             if (!IsRunning)
                 return;
             _writeThreadReady.Reset();
-            if(_readThread != null)
+            if (_writeThread != null)
             {
+                _writeThread.Stop();
+                _writeThread.Dispose();
+                _writeThread = null;
+            }
+            if (_readThread != null)
+            {
+                _readThread.Stop();
                 _readThread.Dispose();
                 _readThread = null;
             }
+            IsRunning = false;
+        }
+        #endregion
+
+        public void Dispose()
+        {
             if (_writeThread != null)
             {
                 _writeThread.Dispose();
                 _writeThread = null;
             }
-            IsRunning = false;
+            if (_readThread != null)
+            {
+                _readThread.Dispose();
+                _readThread = null;
+            }
+            if (_chModeTasks != null)
+            {
+                if (_chModeTasks[0] != null)
+                {
+                    _chModeTasks[0].Dispose();
+                    _chModeTasks[0] = null;
+                }
+                if (_chModeTasks.Length > 1 && _chModeTasks[1] != null)
+                {
+                    _chModeTasks[1].Dispose();
+                    _chModeTasks[1] = null;
+                }
+                _chModeTasks = null;
+                _chModeWriters = null;
+            }
         }
-        #endregion
+
+        ~DAQ()
+        {
+            Dispose();
+        }
     }
 }
