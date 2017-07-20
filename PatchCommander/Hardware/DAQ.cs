@@ -11,6 +11,50 @@ using System.Threading;
 namespace PatchCommander.Hardware
 {
     /// <summary>
+    /// Sample read event args
+    /// </summary>
+    public class ReadDoneEventArgs
+    {
+        /// <summary>
+        /// The sample data
+        /// </summary>
+        readonly double[,] _data;
+
+        /// <summary>
+        /// The running index of the first sample in data
+        /// </summary>
+        readonly long _startIndex;
+
+        /// <summary>
+        /// The sample data
+        /// </summary>
+        public double[,] Data
+        {
+            get
+            {
+                return _data;
+            }
+        }
+
+        /// <summary>
+        /// The running index of the first sample in data
+        /// </summary>
+        public long StartIndex
+        {
+            get
+            {
+                return _startIndex;
+            }
+        }
+
+        public ReadDoneEventArgs(double[,] samples, long startIndex)
+        {
+            _data = samples;
+            _startIndex = startIndex;
+        }
+    }
+
+    /// <summary>
     /// Class to represent acquisition and control via NI DAQ
     /// </summary>
     class DAQ: PropertyChangeNotification, IDisposable
@@ -175,7 +219,7 @@ namespace PatchCommander.Hardware
 
         #region Events
 
-        public delegate void ReadDoneEvent(double[,] data);
+        public delegate void ReadDoneEvent(ReadDoneEventArgs args);
 
         public event ReadDoneEvent ReadDone;
 
@@ -189,6 +233,7 @@ namespace PatchCommander.Hardware
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1Read, "Electrode1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2Read, "Electrode2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.Timing.ConfigureSampleClock("", HardwareSettings.DAQ.Rate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            long sampleIndex = 0;
             _writeThreadReady.WaitOne();
             try
             {
@@ -196,8 +241,14 @@ namespace PatchCommander.Hardware
                 AnalogMultiChannelReader dataReader = new AnalogMultiChannelReader(readTask.Stream);
                 while (!stop.WaitOne(0))
                 {
-                    double[,] read = dataReader.ReadMultiSample(10);
-                    ReadDone.Invoke(read);
+                    var nsamples = readTask.Stream.AvailableSamplesPerChannel;
+                    if (nsamples >= 10)
+                    {
+                        double[,] read = dataReader.ReadMultiSample((int)nsamples);
+                        ReadDone.Invoke(new ReadDoneEventArgs(read, sampleIndex));
+                        //Update our running index
+                        sampleIndex += nsamples;
+                    }
                 }
             }
             finally
