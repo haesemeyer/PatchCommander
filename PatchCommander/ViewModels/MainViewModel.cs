@@ -78,6 +78,16 @@ namespace WpfTestBed.ViewModels
         bool _ch1SealTest;
 
         /// <summary>
+        /// Seal resistance on channel 1
+        /// </summary>
+        double _rSealCh1;
+
+        /// <summary>
+        /// Membrane resistance on channel 1
+        /// </summary>
+        double _rMembCh1;
+
+        /// <summary>
         /// Array to buffer our standard seal-test samples
         /// </summary>
         private double[] _stSamples;
@@ -118,6 +128,38 @@ namespace WpfTestBed.ViewModels
         }
 
         #region Properties
+
+        /// <summary>
+        /// Membrane resistance on channel 1
+        /// </summary>
+        public double RMembraneCh1
+        {
+            get
+            {
+                return _rMembCh1;
+            }
+            set
+            {
+                _rMembCh1 = value;
+                RaisePropertyChanged(nameof(RMembraneCh1));
+            }
+        }
+
+        /// <summary>
+        /// Seal resistance on channel 1
+        /// </summary>
+        public double RSealCh1
+        {
+            get
+            {
+                return _rSealCh1;
+            }
+            set
+            {
+                _rSealCh1 = value;
+                RaisePropertyChanged(nameof(RSealCh1));
+            }
+        }
 
         public ChartCollection<double> PlotData_live1
         {
@@ -362,6 +404,17 @@ namespace WpfTestBed.ViewModels
                     //plot
                     PlotData_seal1.Clear();
                     PlotData_seal1.Append(_sealTestTime, _sealTestAccum);
+                    //update calculated resistances
+                    double currMax = _sealTestAccum.Max();
+                    //Seal resistance = voltage_step / max_current
+                    RSealCh1 = (10e-3 / (currMax * 1e-12)) / 1e6; // Resistance in MOhm
+                    //Membrane resistance = voltage_step / steady_state_current
+                    double currSS = 0;
+                    for(int j = sealTestOnSamples-10; j <= sealTestOnSamples + 10; j++)
+                    {
+                        currSS += _sealTestAccum[j] / 21;
+                    }
+                    RMembraneCh1 = (10e-3 / (currSS * 1e-12)) / 1e6; // Resistance in MOhm
                     //reset accumulator
                     for (int j = 0; j < sealTestSamples; j++)
                         _sealTestAccum[j] = 0;
