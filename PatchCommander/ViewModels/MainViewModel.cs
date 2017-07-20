@@ -15,15 +15,50 @@ using PatchCommander.Hardware;
 
 namespace WpfTestBed.ViewModels
 {
+    /// <summary>
+    /// Represents an indexed sample
+    /// </summary>
+    struct IndexedSample
+    {
+        public double Sample;
+
+        public long Index;
+
+        public IndexedSample(double sample, long index)
+        {
+            Sample = sample;
+            Index = index;
+        }
+    }
 
     class MainViewModel : ViewModelBase
     {
         #region Members
 
+        /// <summary>
+        /// Collection of values to plot on the live plot of channel 1
+        /// </summary>
         ChartCollection<double> _plotData_live1;
 
-        ProducerConsumer<double> _dataDump;
+        /// <summary>
+        /// Producer consumer for live plotting on channel 1
+        /// </summary>
+        ProducerConsumer<double> _ch1LiveDump;
 
+        /// <summary>
+        /// Collection of values to plot on the seal test plot of channel 1
+        /// </summary>
+        ChartCollection<double, double> _plotData_seal1;
+
+        /// <summary>
+        /// Producer consumer for time-aligned seal test
+        /// on channel 1
+        /// </summary>
+        ProducerConsumer<IndexedSample> _ch1SealTestDump;
+
+        /// <summary>
+        /// UI update timer for all live plots
+        /// </summary>
         DispatcherTimer _displayUpdater;
 
         /// <summary>
@@ -47,6 +82,11 @@ namespace WpfTestBed.ViewModels
         /// </summary>
         private double[] _stSamples;
 
+        /// <summary>
+        /// X-Axis range on the seal test plot
+        /// </summary>
+        private Range<double> _ch1_sealXRange = new Range<double>(0, 100);
+
         #endregion
 
         public MainViewModel()
@@ -54,8 +94,10 @@ namespace WpfTestBed.ViewModels
             if (IsInDesignMode)
                 return;
             _plotData_live1 = new ChartCollection<double>(2000);
+            _plotData_seal1 = new ChartCollection<double, double>();
             //Create buffer with 1s worth of storage
-            _dataDump = new ProducerConsumer<double>(HardwareSettings.DAQ.Rate);
+            _ch1LiveDump = new ProducerConsumer<double>(HardwareSettings.DAQ.Rate);
+            _ch1SealTestDump = new ProducerConsumer<IndexedSample>(HardwareSettings.DAQ.Rate);
             _displayUpdater = new DispatcherTimer();
             _displayUpdater.Tick += TimerEvent;
             _displayUpdater.Interval = new TimeSpan(0, 0, 0, 0, 5);
@@ -70,43 +112,9 @@ namespace WpfTestBed.ViewModels
         /// <param name="e"></param>
         private void TimerEvent(object sender, EventArgs e)
         {
-            int bin_factor = HardwareSettings.DAQ.Rate / 2000;
-            if (_dataDump.Count < bin_factor)
-                return;
-            if (_chartRunningSamples == null || _chartRunningSamples.Length != bin_factor)
-                _chartRunningSamples = new double[bin_factor];
-            int c = _dataDump.Count;
-            //we take only a number of samples that evenly fits
-            //into our binning
-            int to_take = c - (c % bin_factor);
-            //create the appropriate binned-down chart values
-            double[] values = new double[to_take / bin_factor];
-            for (int i = 0; i < to_take; i++)
-            {
-                _chartRunningSamples[_chartRunningCount % bin_factor] = _dataDump.Consume();
-                _chartRunningCount++;
-                if (_chartRunningCount % bin_factor == 0)
-                {
-                    int maxIndex = -1;
-                    double absMax = -1;
-                    for(int j = 0; j < bin_factor; j++)
-                    {
-                        if(Math.Abs(_chartRunningSamples[j]) > absMax)
-                        {
-                            absMax = Math.Abs(_chartRunningSamples[j]);
-                            maxIndex = j;
-                        }
-                    }
-                    //add our binned value after conversion into mV (current clamp) or pA (voltage clamp)
-                    var daqvolts = _chartRunningSamples[maxIndex];
-                    if (!VC_Channel1)
-                        daqvolts *= 100.0; //10mV per mv - current clamp
-                    else
-                        daqvolts *= 2000; //0.5V per nA - voltage clamp
-                    values[i / bin_factor] = daqvolts;
-                }
-            }
-            PlotData_live1.Append(values);
+            UpdateCh1LivePlot();
+            if (Ch1_SealTest)
+                UpdateCh1SealTest();
         }
 
         #region Properties
@@ -121,6 +129,19 @@ namespace WpfTestBed.ViewModels
             {
                 _plotData_live1 = value;
                 RaisePropertyChanged(nameof(PlotData_live1));
+            }
+        }
+
+        public ChartCollection<double, double> PlotData_seal1
+        {
+            get
+            {
+                return _plotData_seal1;
+            }
+            set
+            {
+                _plotData_seal1 = value;
+                RaisePropertyChanged(nameof(PlotData_seal1));
             }
         }
 
@@ -167,9 +188,22 @@ namespace WpfTestBed.ViewModels
             get
             {
                 if (VC_Channel1)
-                    return new Range<double>(-200, 200);
+                    return new Range<double>(-2000, 2000);
                 else
-                    return new Range<double>(-1000, 1000);
+                    return new Range<double>(-100, 100);
+            }
+        }
+
+        public Range<double> Ch1_SealXRange
+        {
+            get
+            {
+                return _ch1_sealXRange;
+            }
+            set
+            {
+                _ch1_sealXRange = value;
+                RaisePropertyChanged(nameof(Ch1_SealXRange));
             }
         }
 
@@ -227,6 +261,117 @@ namespace WpfTestBed.ViewModels
             return samples;
         }
 
+        private double DAQV_to_pA(double daqVolts)
+        {
+            return daqVolts * 2000; //0.5V per nA - voltage clamp
+        }
+
+        private double DAQV_to_mV(double daqVolts)
+        {
+            return daqVolts * 100.0; //10mV per mv - current clamp
+        }
+
+        /// <summary>
+        /// Gets called by the UI timer to update the display of
+        /// the live plot of channel 1
+        /// </summary>
+        private void UpdateCh1LivePlot()
+        {
+            int bin_factor = HardwareSettings.DAQ.Rate / 2000;
+            int c = _ch1LiveDump.Count;
+            if (c < bin_factor)
+                return;
+            if (_chartRunningSamples == null || _chartRunningSamples.Length != bin_factor)
+                _chartRunningSamples = new double[bin_factor];
+            //we take only a number of samples that evenly fits
+            //into our binning
+            int to_take = c - (c % bin_factor);
+            //create the appropriate chart values as the absolute maximum within the bin
+            double[] values = new double[to_take / bin_factor];
+            for (int i = 0; i < to_take; i++)
+            {
+                _chartRunningSamples[_chartRunningCount % bin_factor] = _ch1LiveDump.Consume();
+                _chartRunningCount++;
+                if (_chartRunningCount % bin_factor == 0)
+                {
+                    int maxIndex = -1;
+                    double absMax = -1;
+                    for (int j = 0; j < bin_factor; j++)
+                    {
+                        if (Math.Abs(_chartRunningSamples[j]) > absMax)
+                        {
+                            absMax = Math.Abs(_chartRunningSamples[j]);
+                            maxIndex = j;
+                        }
+                    }
+                    //add our binned value after conversion into mV (current clamp) or pA (voltage clamp)
+                    var daqvolts = _chartRunningSamples[maxIndex];
+                    if (!VC_Channel1)
+                        daqvolts = DAQV_to_mV(daqvolts);
+                    else
+                        daqvolts = DAQV_to_pA(daqvolts);
+                    values[i / bin_factor] = daqvolts;
+                }
+            }
+            PlotData_live1.Append(values);
+        }
+
+        /// <summary>
+        /// Array to accumulate seal test samples
+        /// for alignment and averaging
+        /// </summary>
+        double[] _sealTestAccum;
+
+        /// <summary>
+        /// Array containing the times of all seal
+        /// test samples
+        /// </summary>
+        double[] _sealTestTime;
+
+        private void UpdateCh1SealTest()
+        {
+            //Some constants that should be settable later
+            int sealTestFreq = 10;
+            int sealTestSamples = HardwareSettings.DAQ.Rate / sealTestFreq;
+            int sealTestOnSamples = sealTestSamples / 2;
+            int nAccum = sealTestFreq / 2;
+            // We want to align plotting of the seal test, such that the
+            // TODO: current spikes at start and end of step are in the middle of the plot
+            // i.e. such that the middle of the OnSamples is in the middle of the plot
+            int zeroPoint = sealTestSamples - sealTestOnSamples / 2;
+            if (_sealTestAccum == null || _sealTestAccum.Length != sealTestSamples)
+            {
+                _sealTestAccum = new double[sealTestSamples];
+                _sealTestTime = new double[sealTestSamples];
+                for (int i = 0; i < sealTestSamples; i++)
+                    _sealTestTime[i] = (1000.0 / HardwareSettings.DAQ.Rate) * i;
+                PlotData_seal1.Capacity = sealTestSamples;
+                Ch1_SealXRange = new Range<double>(0, 1000.0 / sealTestFreq);
+            }
+            // consume samples
+            int c = _ch1SealTestDump.Count;
+            if (c < sealTestSamples)
+                return;
+            for (int i = 0; i < c; i++)
+            {
+                var sample = _ch1SealTestDump.Consume();
+                //check if this sample belongs to a new accumulation window - if yes, plot and reset accumulator
+                long window_index = (sample.Index + zeroPoint) % (sealTestSamples * nAccum);
+                if(window_index == 0)
+                {
+                    //plot
+                    PlotData_seal1.Clear();
+                    PlotData_seal1.Append(_sealTestTime, _sealTestAccum);
+                    //reset accumulator
+                    for (int j = 0; j < sealTestSamples; j++)
+                        _sealTestAccum[j] = 0;
+                }
+                //add new samples to array
+                int array_index = (int)((sample.Index % sealTestSamples - zeroPoint + sealTestSamples) % sealTestSamples);
+                _sealTestAccum[array_index] += DAQV_to_pA(sample.Sample / nAccum);
+            }
+        }
+
         /// <summary>
         /// For one electrode generates our seal test samples for one whole second
         /// </summary>
@@ -276,10 +421,14 @@ namespace WpfTestBed.ViewModels
         /// Event handler whenever a bunch of new samples is acquired
         /// </summary>
         /// <param name="samples">The samples received</param>
-        void SampleAcquired(double[,] samples)
+        void SampleAcquired(ReadDoneEventArgs args)
         {
-            for (int i = 0; i < samples.GetLength(1); i++)
-                _dataDump.Produce(samples[0, i]);
+            for (int i = 0; i < args.Data.GetLength(1); i++)
+            {
+                _ch1LiveDump.Produce(args.Data[0, i]);
+                if (Ch1_SealTest)
+                    _ch1SealTestDump.Produce(new IndexedSample(args.Data[0, i], args.StartIndex + i));
+            }
         }
 
         #endregion
