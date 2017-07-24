@@ -49,33 +49,6 @@ namespace MHApi.GUI
 
         #endregion
 
-
-        //INotifyPropertyChanged is now implemented in PropertyChangeNotification baseclass
-      /*  #region INotifyPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged = delegate { };
-
-        protected void RaisePropertyChanged(string name)
-        {
-            if (name != "")
-            {
-                VerifyPropertyName(name);
-            }
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
-            }
-        }
-
-        [Conditional("DEBUG")]
-        [DebuggerStepThrough]
-        protected void VerifyPropertyName(string propertyName)
-        {
-            var myType = GetType();
-            if (myType.GetProperty(propertyName) == null)
-                throw new ArgumentException("Property not found", propertyName);
-        }
-        #endregion*/
-
         #region IDisposable
         public bool IsDisposed { get; private set; }
 
