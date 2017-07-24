@@ -405,7 +405,7 @@ namespace WpfTestBed.ViewModels
                     PlotData_seal1.Clear();
                     PlotData_seal1.Append(_sealTestTime, _sealTestAccum);
                     //update calculated resistances
-                    double currMax = _sealTestAccum.Max();
+                    double currMax = (_sealTestAccum.Max() - _sealTestAccum.Min()) / 2;
                     //Seal resistance = voltage_step / max_current
                     RSealCh1 = (10e-3 / (currMax * 1e-12)) / 1e6; // Resistance in MOhm
                     //Membrane resistance = voltage_step / steady_state_current
