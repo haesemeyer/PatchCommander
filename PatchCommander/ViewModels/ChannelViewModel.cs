@@ -73,14 +73,21 @@ namespace PatchCommander.ViewModels
         double _rMemb;
 
         /// <summary>
-        /// Array to buffer our standard seal-test samples
-        /// </summary>
-        private double[] _stSamples;
-
-        /// <summary>
         /// X-Axis range on the seal test plot
         /// </summary>
         private Range<double> _sealXRange = new Range<double>(0, 100);
+
+        /// <summary>
+        /// Array to accumulate seal test samples
+        /// for alignment and averaging
+        /// </summary>
+        double[] _sealTestAccum;
+
+        /// <summary>
+        /// Array containing the times of all seal
+        /// test samples
+        /// </summary>
+        double[] _sealTestTime;
 
         #endregion
 
@@ -202,6 +209,7 @@ namespace PatchCommander.ViewModels
                 RaisePropertyChanged(nameof(VC));
                 RaisePropertyChanged(nameof(UnitLabel));
                 RaisePropertyChanged(nameof(UnitRange));
+                RaisePropertyChanged(nameof(SealTest));
             }
         }
 
@@ -257,7 +265,7 @@ namespace PatchCommander.ViewModels
         {
             get
             {
-                return _sealTest;
+                return _sealTest & VC;
             }
             set
             {
@@ -270,29 +278,16 @@ namespace PatchCommander.ViewModels
 
         #region Methods
 
-        /// <summary>
-        /// Generates necessary analog out samples
-        /// </summary>
-        /// <param name="second">The current second since start</param>
-        /// <param name="nSamples">The number of samples to generate</param>
-        /// <returns>For each analog out the appropriate voltage samples</returns>
-        private double[,] genSamples(double second, int nSamples)
+        void StartAcquisition()
         {
-            double[,] samples = new double[1, nSamples];
-            if (_sealTest && VC)
-            {
-                var sts = sealTestSamples(second, nSamples);
-                for (int i = 0; i < nSamples; i++)
-                    samples[0, i] = sts[i];
-            }
-            else
-            {
-                for (int i = 0; i < nSamples; i++)
-                {
-                    samples[0, i] = 0;
-                }
-            }
-            return samples;
+            //Subscribe to sample acquisition event
+            HardwareManager.DaqBoard.ReadDone += SampleAcquired;
+        }
+
+        void StopAcquisition()
+        {
+            //Unsubscribe from sample acquisition event
+            HardwareManager.DaqBoard.ReadDone -= SampleAcquired;
         }
 
         /// <summary>
@@ -339,18 +334,6 @@ namespace PatchCommander.ViewModels
             }
             PlotData_Live.Append(values);
         }
-
-        /// <summary>
-        /// Array to accumulate seal test samples
-        /// for alignment and averaging
-        /// </summary>
-        double[] _sealTestAccum;
-
-        /// <summary>
-        /// Array containing the times of all seal
-        /// test samples
-        /// </summary>
-        double[] _sealTestTime;
 
         /// <summary>
         /// Gets called to update our triggered plot with seal-test samples
@@ -408,49 +391,6 @@ namespace PatchCommander.ViewModels
                 int array_index = (int)((sample.Index % sealTestSamples - zeroPoint + sealTestSamples) % sealTestSamples);
                 _sealTestAccum[array_index] += HardwareSettings.DAQ.DAQV_to_pA(sample.Sample / nAccum);
             }
-        }
-
-        /// <summary>
-        /// For one electrode generates our seal test samples for one whole second
-        /// </summary>
-        /// <param name="second">The starting second</param>
-        /// <param name="nSamples">The number of samples to generate equaling one second</param>
-        /// <param name="freqHz">The frequency in Hz at which to generate sealTestSamples</param>
-        /// <param name="ampMV">The amplitude in mV</param>
-        /// <returns></returns>
-        private double[] sealTestSamples(double second, int nSamples, int freqHz = 10, double ampMV = 10)
-        {
-            if (_stSamples == null || _stSamples.Length != nSamples)
-            {
-                //Generate our sample buffer
-                _stSamples = new double[nSamples];
-                if (nSamples % (freqHz * 2) != 0)
-                {
-                    System.Diagnostics.Debug.WriteLine("Warning seal test frequency does not result in even samples.");
-                }
-                int sam_per_seal = nSamples / freqHz;
-                int sam_on = sam_per_seal / 2;
-                for (int i = 0; i < nSamples; i++)
-                {
-                    if (i % sam_per_seal < sam_on)
-                        _stSamples[i] = ampMV / 20;
-                    else
-                        _stSamples[i] = 0;
-                }
-            }
-            return _stSamples;
-        }
-
-        void StartAcquisition()
-        {
-            //Subscribe to sample acquisition event
-            HardwareManager.DaqBoard.ReadDone += SampleAcquired;
-        }
-
-        void StopAcquisition()
-        {
-            //Unsubscribe from sample acquisition event
-            HardwareManager.DaqBoard.ReadDone -= SampleAcquired;
         }
 
         /// <summary>
