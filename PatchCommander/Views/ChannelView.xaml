@@ -1,0 +1,21 @@
+﻿<GUI:WindowAwareView x:Class="PatchCommander.Views.ChannelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:PatchCommander.ViewModels"
+             xmlns:local="clr-namespace:PatchCommander.Views"
+             xmlns:GUI="clr-namespace:MHApi.GUI"
+             xmlns:ni="http://schemas.ni.com/controls/2009/xaml/presentation"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <GUI:WindowAwareView.Resources>
+        <vm:ChannelViewModel x:Key="mvmDataSource"/>
+    </GUI:WindowAwareView.Resources>
+    <GUI:WindowAwareView.DataContext>
+        <Binding Source="{StaticResource mvmDataSource}" x:Name="ViewModel" x:FieldModifier="public"/>
+    </GUI:WindowAwareView.DataContext>
+    <Grid>
+            
+    </Grid>
+</GUI:WindowAwareView>

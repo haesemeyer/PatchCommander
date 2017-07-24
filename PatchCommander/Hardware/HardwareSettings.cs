@@ -21,6 +21,26 @@ namespace PatchCommander.Hardware
             public const string Ch1Mode = "port0/line0";
 
             public const string Ch2Mode = "port0/line1";
+
+            /// <summary>
+            /// Converts DAQ voltage to pico-amps
+            /// </summary>
+            /// <param name="daqVolts">The voltage read on the DAQ</param>
+            /// <returns>Current in pA</returns>
+            public static double DAQV_to_pA(double daqVolts)
+            {
+                return daqVolts * 2000; //0.5V per nA - voltage clamp
+            }
+
+            /// <summary>
+            /// Converts DAQ voltage to milli-volts
+            /// </summary>
+            /// <param name="daqVolts">The voltage read on the DAQ</param>
+            /// <returns>Voltage in mV</returns>
+            public static double DAQV_to_mV(double daqVolts)
+            {
+                return daqVolts * 100.0; //10mV per mv - current clamp
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<UserControl
+﻿<GUI:WindowAwareView
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -10,13 +10,13 @@
              x:Class="PatchCommander.Views.MainView"
              mc:Ignorable="d" 
              d:DesignHeight="300" Width="1264" Height="900">
-    <UserControl.Resources>
+    <GUI:WindowAwareView.Resources>
         <GUI:NegateBoolConverter x:Key="NegateBoolConverter"/>
         <vm:MainViewModel x:Key="mvmDataSource"/>
-    </UserControl.Resources>
-    <UserControl.DataContext>
+    </GUI:WindowAwareView.Resources>
+    <GUI:WindowAwareView.DataContext>
         <Binding Source="{StaticResource mvmDataSource}" x:Name="ViewModel" x:FieldModifier="public"/>
-    </UserControl.DataContext>
+    </GUI:WindowAwareView.DataContext>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="363*"/>
@@ -79,4 +79,4 @@
             </Grid>
         </GroupBox>
     </Grid>
-</UserControl>
+</GUI:WindowAwareView>

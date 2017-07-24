@@ -3,58 +3,43 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 
+using PatchCommander.Hardware;
 using MHApi.GUI;
 using MHApi.Threading;
-using System.Threading;
-using System.Windows.Threading;
-using System.Collections.ObjectModel;
-using MHApi.Utilities;
 using NationalInstruments.Controls;
-using PatchCommander.Hardware;
 
 namespace PatchCommander.ViewModels
 {
     /// <summary>
-    /// Represents an indexed sample
+    /// View model for one fully controllable
+    /// acquisition channel
     /// </summary>
-    struct IndexedSample
-    {
-        public double Sample;
-
-        public long Index;
-
-        public IndexedSample(double sample, long index)
-        {
-            Sample = sample;
-            Index = index;
-        }
-    }
-
-    class MainViewModel : ViewModelBase
+    class ChannelViewModel : ViewModelBase
     {
         #region Members
 
         /// <summary>
-        /// Collection of values to plot on the live plot of channel 1
+        /// Collection of values to plot on the live plot
         /// </summary>
-        ChartCollection<double> _plotData_live1;
+        ChartCollection<double> _plotData_live;
 
         /// <summary>
-        /// Producer consumer for live plotting on channel 1
+        /// Producer consumer for live plotting
         /// </summary>
-        ProducerConsumer<double> _ch1LiveDump;
+        ProducerConsumer<double> _liveDump;
 
         /// <summary>
-        /// Collection of values to plot on the seal test plot of channel 1
+        /// Collection of values to plot on the seal test plot
         /// </summary>
-        ChartCollection<double, double> _plotData_seal1;
+        ChartCollection<double, double> _plotData_seal;
 
         /// <summary>
         /// Producer consumer for time-aligned seal test
         /// on channel 1
         /// </summary>
-        ProducerConsumer<IndexedSample> _ch1SealTestDump;
+        ProducerConsumer<IndexedSample> _sealTestDump;
 
         /// <summary>
         /// UI update timer for all live plots
@@ -73,19 +58,19 @@ namespace PatchCommander.ViewModels
         long _chartRunningCount;
 
         /// <summary>
-        /// True when performing seal test on channel 1
+        /// True when performing seal test
         /// </summary>
-        bool _ch1SealTest;
+        bool _sealTest;
 
         /// <summary>
-        /// Seal resistance on channel 1
+        /// Seal resistance
         /// </summary>
-        double _rSealCh1;
+        double _rSeal;
 
         /// <summary>
-        /// Membrane resistance on channel 1
+        /// Membrane resistance
         /// </summary>
-        double _rMembCh1;
+        double _rMemb;
 
         /// <summary>
         /// Array to buffer our standard seal-test samples
@@ -95,24 +80,28 @@ namespace PatchCommander.ViewModels
         /// <summary>
         /// X-Axis range on the seal test plot
         /// </summary>
-        private Range<double> _ch1_sealXRange = new Range<double>(0, 100);
+        private Range<double> _sealXRange = new Range<double>(0, 100);
 
         #endregion
 
-        public MainViewModel()
+        public ChannelViewModel()
         {
             if (IsInDesignMode)
                 return;
-            _plotData_live1 = new ChartCollection<double>(2000);
-            _plotData_seal1 = new ChartCollection<double, double>();
+            //Subscribe to start stop events on main
+            MainViewModel.Start += StartAcquisition;
+            MainViewModel.Stop += StopAcquisition;
+            //Set up char collections
+            _plotData_live = new ChartCollection<double>(2000);
+            _plotData_seal = new ChartCollection<double, double>();
             //Create buffer with 1s worth of storage
-            _ch1LiveDump = new ProducerConsumer<double>(HardwareSettings.DAQ.Rate);
-            _ch1SealTestDump = new ProducerConsumer<IndexedSample>(HardwareSettings.DAQ.Rate);
+            _liveDump = new ProducerConsumer<double>(HardwareSettings.DAQ.Rate);
+            _sealTestDump = new ProducerConsumer<IndexedSample>(HardwareSettings.DAQ.Rate);
             _displayUpdater = new DispatcherTimer();
             _displayUpdater.Tick += TimerEvent;
             _displayUpdater.Interval = new TimeSpan(0, 0, 0, 0, 5);
             _displayUpdater.Start();
-            RaisePropertyChanged(nameof(VC_Channel1));
+            RaisePropertyChanged(nameof(VC));
         }
 
         /// <summary>
@@ -122,75 +111,81 @@ namespace PatchCommander.ViewModels
         /// <param name="e"></param>
         private void TimerEvent(object sender, EventArgs e)
         {
-            UpdateCh1LivePlot();
-            if (Ch1_SealTest)
-                UpdateCh1SealTest();
+            UpdateLivePlot();
+            if (SealTest)
+                UpdateSealTest();
         }
 
         #region Properties
 
         /// <summary>
-        /// Membrane resistance on channel 1
+        /// Membrane resistance
         /// </summary>
-        public double RMembraneCh1
+        public double RMembrane
         {
             get
             {
-                return _rMembCh1;
+                return _rMemb;
             }
             set
             {
-                _rMembCh1 = value;
-                RaisePropertyChanged(nameof(RMembraneCh1));
+                _rMemb = value;
+                RaisePropertyChanged(nameof(RMembrane));
             }
         }
 
         /// <summary>
-        /// Seal resistance on channel 1
+        /// Seal resistance
         /// </summary>
-        public double RSealCh1
+        public double RSeal
         {
             get
             {
-                return _rSealCh1;
+                return _rSeal;
             }
             set
             {
-                _rSealCh1 = value;
-                RaisePropertyChanged(nameof(RSealCh1));
-            }
-        }
-
-        public ChartCollection<double> PlotData_live1
-        {
-            get
-            {
-                return _plotData_live1;
-            }
-            set
-            {
-                _plotData_live1 = value;
-                RaisePropertyChanged(nameof(PlotData_live1));
-            }
-        }
-
-        public ChartCollection<double, double> PlotData_seal1
-        {
-            get
-            {
-                return _plotData_seal1;
-            }
-            set
-            {
-                _plotData_seal1 = value;
-                RaisePropertyChanged(nameof(PlotData_seal1));
+                _rSeal = value;
+                RaisePropertyChanged(nameof(RSeal));
             }
         }
 
         /// <summary>
-        /// Indicates and sets whether channel1 is in voltage or current clamp mode
+        /// Plot data of live plot
         /// </summary>
-        public bool VC_Channel1
+        public ChartCollection<double> PlotData_Live
+        {
+            get
+            {
+                return _plotData_live;
+            }
+            set
+            {
+                _plotData_live = value;
+                RaisePropertyChanged(nameof(PlotData_Live));
+            }
+        }
+
+        /// <summary>
+        /// Plot data of triggered plot
+        /// </summary>
+        public ChartCollection<double, double> PlotData_Seal
+        {
+            get
+            {
+                return _plotData_seal;
+            }
+            set
+            {
+                _plotData_seal = value;
+                RaisePropertyChanged(nameof(PlotData_Seal));
+            }
+        }
+
+        /// <summary>
+        /// Indicates and sets whether the channel is in voltage or current clamp mode
+        /// </summary>
+        public bool VC
         {
             get
             {
@@ -204,20 +199,20 @@ namespace PatchCommander.ViewModels
                     HardwareManager.DaqBoard.Channel1Mode = DAQ.ClampMode.VoltageClamp;
                 else
                     HardwareManager.DaqBoard.Channel1Mode = DAQ.ClampMode.CurrentClamp;
-                RaisePropertyChanged(nameof(VC_Channel1));
-                RaisePropertyChanged(nameof(Ch1_UnitLabel));
-                RaisePropertyChanged(nameof(Ch1_UnitRange));
+                RaisePropertyChanged(nameof(VC));
+                RaisePropertyChanged(nameof(UnitLabel));
+                RaisePropertyChanged(nameof(UnitRange));
             }
         }
 
         /// <summary>
-        /// Depending on current mode sets the y-axis unit label of channel1 charts
+        /// Depending on current mode sets the y-axis unit label of charts
         /// </summary>
-        public string Ch1_UnitLabel
+        public string UnitLabel
         {
             get
             {
-                if (VC_Channel1)
+                if (VC)
                     return "Current [pA]";
                 else
                     return "Voltage [mV]";
@@ -225,60 +220,55 @@ namespace PatchCommander.ViewModels
         }
 
         /// <summary>
-        /// Depending on current mode sets the y-axis range of channel1 charts
+        /// Depending on current mode sets the y-axis range of charts
         /// </summary>
-        public Range<double> Ch1_UnitRange
+        public Range<double> UnitRange
         {
             get
             {
-                if (VC_Channel1)
+                if (VC)
                     return new Range<double>(-2000, 2000);
                 else
                     return new Range<double>(-100, 100);
             }
         }
 
-        public Range<double> Ch1_SealXRange
+        /// <summary>
+        /// The X-Range of our triggered plot
+        /// </summary>
+        public Range<double> SealXRange
         {
             get
             {
-                return _ch1_sealXRange;
+                return _sealXRange;
             }
             set
             {
-                _ch1_sealXRange = value;
-                RaisePropertyChanged(nameof(Ch1_SealXRange));
+                _sealXRange = value;
+                RaisePropertyChanged(nameof(SealXRange));
             }
         }
 
         /// <summary>
-        /// If true, seal-test values will be generated on channel 1
+        /// If true, seal-test values will be generated
         /// when in voltage clamp - ignored in current clamp
         /// </summary>
-        public bool Ch1_SealTest
+        public bool SealTest
         {
             get
             {
-                return _ch1SealTest;
+                return _sealTest;
             }
             set
             {
-                _ch1SealTest = value;
-                RaisePropertyChanged(nameof(Ch1_SealTest));
+                _sealTest = value;
+                RaisePropertyChanged(nameof(SealTest));
             }
         }
 
         #endregion
 
         #region Methods
-
-        public void StartStop()
-        {
-            if (HardwareManager.DaqBoard.IsRunning)
-                StopAcquisition();
-            else
-                StartAcquisition();
-        }
 
         /// <summary>
         /// Generates necessary analog out samples
@@ -289,7 +279,7 @@ namespace PatchCommander.ViewModels
         private double[,] genSamples(double second, int nSamples)
         {
             double[,] samples = new double[1, nSamples];
-            if (_ch1SealTest && VC_Channel1)
+            if (_sealTest && VC)
             {
                 var sts = sealTestSamples(second, nSamples);
                 for (int i = 0; i < nSamples; i++)
@@ -305,24 +295,14 @@ namespace PatchCommander.ViewModels
             return samples;
         }
 
-        private double DAQV_to_pA(double daqVolts)
-        {
-            return daqVolts * 2000; //0.5V per nA - voltage clamp
-        }
-
-        private double DAQV_to_mV(double daqVolts)
-        {
-            return daqVolts * 100.0; //10mV per mv - current clamp
-        }
-
         /// <summary>
         /// Gets called by the UI timer to update the display of
-        /// the live plot of channel 1
+        /// the live plot
         /// </summary>
-        private void UpdateCh1LivePlot()
+        private void UpdateLivePlot()
         {
             int bin_factor = HardwareSettings.DAQ.Rate / 2000;
-            int c = _ch1LiveDump.Count;
+            int c = _liveDump.Count;
             if (c < bin_factor)
                 return;
             if (_chartRunningSamples == null || _chartRunningSamples.Length != bin_factor)
@@ -334,7 +314,7 @@ namespace PatchCommander.ViewModels
             double[] values = new double[to_take / bin_factor];
             for (int i = 0; i < to_take; i++)
             {
-                _chartRunningSamples[_chartRunningCount % bin_factor] = _ch1LiveDump.Consume();
+                _chartRunningSamples[_chartRunningCount % bin_factor] = _liveDump.Consume();
                 _chartRunningCount++;
                 if (_chartRunningCount % bin_factor == 0)
                 {
@@ -350,14 +330,14 @@ namespace PatchCommander.ViewModels
                     }
                     //add our binned value after conversion into mV (current clamp) or pA (voltage clamp)
                     var daqvolts = _chartRunningSamples[maxIndex];
-                    if (!VC_Channel1)
-                        daqvolts = DAQV_to_mV(daqvolts);
+                    if (!VC)
+                        daqvolts = HardwareSettings.DAQ.DAQV_to_mV(daqvolts);
                     else
-                        daqvolts = DAQV_to_pA(daqvolts);
+                        daqvolts = HardwareSettings.DAQ.DAQV_to_pA(daqvolts);
                     values[i / bin_factor] = daqvolts;
                 }
             }
-            PlotData_live1.Append(values);
+            PlotData_Live.Append(values);
         }
 
         /// <summary>
@@ -372,7 +352,10 @@ namespace PatchCommander.ViewModels
         /// </summary>
         double[] _sealTestTime;
 
-        private void UpdateCh1SealTest()
+        /// <summary>
+        /// Gets called to update our triggered plot with seal-test samples
+        /// </summary>
+        private void UpdateSealTest()
         {
             //Some constants that should be settable later
             int sealTestFreq = 10;
@@ -389,41 +372,41 @@ namespace PatchCommander.ViewModels
                 _sealTestTime = new double[sealTestSamples];
                 for (int i = 0; i < sealTestSamples; i++)
                     _sealTestTime[i] = (1000.0 / HardwareSettings.DAQ.Rate) * i;
-                PlotData_seal1.Capacity = sealTestSamples;
-                Ch1_SealXRange = new Range<double>(0, 1000.0 / sealTestFreq);
+                PlotData_Seal.Capacity = sealTestSamples;
+                SealXRange = new Range<double>(0, 1000.0 / sealTestFreq);
             }
             // consume samples
-            int c = _ch1SealTestDump.Count;
+            int c = _sealTestDump.Count;
             if (c < sealTestSamples)
                 return;
             for (int i = 0; i < c; i++)
             {
-                var sample = _ch1SealTestDump.Consume();
+                var sample = _sealTestDump.Consume();
                 //check if this sample belongs to a new accumulation window - if yes, plot and reset accumulator
                 long window_index = (sample.Index + zeroPoint) % (sealTestSamples * nAccum);
-                if(window_index == 0)
+                if (window_index == 0)
                 {
                     //plot
-                    PlotData_seal1.Clear();
-                    PlotData_seal1.Append(_sealTestTime, _sealTestAccum);
+                    PlotData_Seal.Clear();
+                    PlotData_Seal.Append(_sealTestTime, _sealTestAccum);
                     //update calculated resistances
                     double currMax = (_sealTestAccum.Max() - _sealTestAccum.Min()) / 2;
                     //Seal resistance = voltage_step / max_current
-                    RSealCh1 = (10e-3 / (currMax * 1e-12)) / 1e6; // Resistance in MOhm
+                    RSeal = (10e-3 / (currMax * 1e-12)) / 1e6; // Resistance in MOhm
                     //Membrane resistance = voltage_step / steady_state_current
                     double currSS = 0;
-                    for(int j = sealTestOnSamples-10; j <= sealTestOnSamples + 10; j++)
+                    for (int j = sealTestOnSamples - 10; j <= sealTestOnSamples + 10; j++)
                     {
                         currSS += _sealTestAccum[j] / 21;
                     }
-                    RMembraneCh1 = (10e-3 / (currSS * 1e-12)) / 1e6; // Resistance in MOhm
+                    RMembrane = (10e-3 / (currSS * 1e-12)) / 1e6; // Resistance in MOhm
                     //reset accumulator
                     for (int j = 0; j < sealTestSamples; j++)
                         _sealTestAccum[j] = 0;
                 }
                 //add new samples to array
                 int array_index = (int)((sample.Index % sealTestSamples - zeroPoint + sealTestSamples) % sealTestSamples);
-                _sealTestAccum[array_index] += DAQV_to_pA(sample.Sample / nAccum);
+                _sealTestAccum[array_index] += HardwareSettings.DAQ.DAQV_to_pA(sample.Sample / nAccum);
             }
         }
 
@@ -435,19 +418,19 @@ namespace PatchCommander.ViewModels
         /// <param name="freqHz">The frequency in Hz at which to generate sealTestSamples</param>
         /// <param name="ampMV">The amplitude in mV</param>
         /// <returns></returns>
-        private double[] sealTestSamples(double second, int nSamples, int freqHz=10, double ampMV=10)
+        private double[] sealTestSamples(double second, int nSamples, int freqHz = 10, double ampMV = 10)
         {
             if (_stSamples == null || _stSamples.Length != nSamples)
             {
                 //Generate our sample buffer
                 _stSamples = new double[nSamples];
-                if(nSamples % (freqHz*2) != 0)
+                if (nSamples % (freqHz * 2) != 0)
                 {
                     System.Diagnostics.Debug.WriteLine("Warning seal test frequency does not result in even samples.");
                 }
                 int sam_per_seal = nSamples / freqHz;
                 int sam_on = sam_per_seal / 2;
-                for(int i = 0; i<nSamples; i++)
+                for (int i = 0; i < nSamples; i++)
                 {
                     if (i % sam_per_seal < sam_on)
                         _stSamples[i] = ampMV / 20;
@@ -460,18 +443,14 @@ namespace PatchCommander.ViewModels
 
         void StartAcquisition()
         {
-            //Notify all dependents that acquistion starts
-            Start.Invoke();
-            //Start the DAQ board
-            HardwareManager.DaqBoard.Start((s, i) => { return genSamples(s, i); });
+            //Subscribe to sample acquisition event
+            HardwareManager.DaqBoard.ReadDone += SampleAcquired;
         }
 
         void StopAcquisition()
         {
-            //Notify all dependents that acquisition stops
-            Stop.Invoke();
-            //Stop the DAQ board
-            HardwareManager.DaqBoard.Stop();
+            //Unsubscribe from sample acquisition event
+            HardwareManager.DaqBoard.ReadDone -= SampleAcquired;
         }
 
         /// <summary>
@@ -482,35 +461,18 @@ namespace PatchCommander.ViewModels
         {
             for (int i = 0; i < args.Data.GetLength(1); i++)
             {
-                _ch1LiveDump.Produce(args.Data[0, i]);
-                if (Ch1_SealTest)
-                    _ch1SealTestDump.Produce(new IndexedSample(args.Data[0, i], args.StartIndex + i));
+                _liveDump.Produce(args.Data[0, i]);
+                if (SealTest)
+                    _sealTestDump.Produce(new IndexedSample(args.Data[0, i], args.StartIndex + i));
             }
         }
-
-        #endregion
-
-        #region Events
-
-        /// <summary>
-        /// Event to subscribe to to get notified
-        /// about acquisition starts
-        /// </summary>
-        public static event Action Start;
-
-        /// <summary>
-        /// Event to subscribe to get notified
-        /// about acquisition stops
-        /// </summary>
-        public static event Action Stop;
 
         #endregion
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            if (HardwareManager.DaqBoard.IsRunning)
-                StopAcquisition();
+            StopAcquisition();
         }
     }
 }
