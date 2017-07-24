@@ -13,7 +13,7 @@ using MHApi.Utilities;
 using NationalInstruments.Controls;
 using PatchCommander.Hardware;
 
-namespace WpfTestBed.ViewModels
+namespace PatchCommander.ViewModels
 {
     /// <summary>
     /// Represents an indexed sample

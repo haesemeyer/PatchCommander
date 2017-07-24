@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PatchCommander"
-        xmlns:Views="clr-namespace:WpfTestBed.Views" x:Class="PatchCommander.MainWindow"
+        xmlns:Views="clr-namespace:PatchCommander.Views" x:Class="PatchCommander.MainWindow"
         mc:Ignorable="d"
         Title="Patch Commander" Height="984.211" Width="1318.421">
     <Grid Margin="0,0,2,0">
