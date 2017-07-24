@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:PatchCommander"
         xmlns:Views="clr-namespace:WpfTestBed.Views" x:Class="PatchCommander.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="950" Width="1100">
-    <Grid>
-        <Views:MainView Margin="40.737,10,51.262,9"/>
+        Title="Patch Commander" Height="984.211" Width="1318.421">
+    <Grid Margin="0,0,2,0">
+        <Views:MainView Margin="19.681,25.791,0,27.419" d:LayoutOverrides="TopMargin, BottomMargin" HorizontalAlignment="Left"/>
     </Grid>
 </Window>

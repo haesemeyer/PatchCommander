@@ -9,7 +9,7 @@
              xmlns:ni="http://schemas.ni.com/controls/2009/xaml/presentation"
              x:Class="WpfTestBed.Views.MainView"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300" Width="1000" Height="900">
+             d:DesignHeight="300" Width="1264" Height="900">
     <UserControl.Resources>
         <GUI:NegateBoolConverter x:Key="NegateBoolConverter"/>
         <vm:MainViewModel x:Key="mvmDataSource"/>
@@ -31,7 +31,11 @@
                     <RowDefinition Height="319*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="1">
-                    <ni:Graph x:Name="Ch1Live" Margin="0,0,425.733,-1.06" DataSource="{Binding PlotData_live1}" RenderMode="Hardware">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="967*"/>
+                        <ColumnDefinition Width="257*"/>
+                    </Grid.ColumnDefinitions>
+                    <ni:Graph x:Name="Ch1Live" Margin="0,0,344.233,-1.06" DataSource="{Binding PlotData_live1}" RenderMode="Hardware">
                         <ni:Graph.DefaultPlotRenderers>
                             <ni:LinePlotRenderer Stroke="#FFD28000" StrokeThickness="2"/>
                         </ni:Graph.DefaultPlotRenderers>
@@ -47,7 +51,7 @@
                             </ni:AxisDouble>
                         </ni:Graph.Axes>
                     </ni:Graph>
-                    <ni:Graph x:Name="Ch1Seal" Margin="0,0,22.233,-1.06" DataSource="{Binding PlotData_seal1}" RenderMode="Hardware" HorizontalAlignment="Right" Width="336.267">
+                    <ni:Graph x:Name="Ch1Seal" Margin="0,0,15.733,-1.06" DataSource="{Binding PlotData_seal1}" RenderMode="Hardware" HorizontalAlignment="Right" Width="316.767">
                         <ni:Graph.DefaultPlotRenderers>
                             <ni:LinePlotRenderer Stroke="#FF0A8000" StrokeThickness="2"/>
                         </ni:Graph.DefaultPlotRenderers>
@@ -63,9 +67,15 @@
                             </ni:AxisDouble>
                         </ni:Graph.Axes>
                     </ni:Graph>
+                    <Grid Grid.Column="1">
+                        <ni:GaugeDouble Margin="10,4,107,0" Height="140" VerticalAlignment="Top" Value="{Binding RMembraneCh1}" Range="0, 10000, System.Double" PointerBrush="#FF53E0E0" Background="White" InteractionMode="EditRange"/>
+                        <ni:GaugeDouble Margin="10,0,107,5.538" Height="140" VerticalAlignment="Bottom" Value="{Binding RSealCh1}" Range="0, 100, System.Double" PointerBrush="#FFD23AFF"/>
+                    </Grid>
                 </Grid>
                 <CheckBox x:Name="checkBox" Content="Voltage Clamp                   " HorizontalAlignment="Left" Margin="24.703,1.904,0,3.991" IsChecked="{Binding VC_Channel1}" d:LayoutOverrides="Height" Width="106.982"/>
                 <ToggleButton x:Name="toggleButton" Content="SealTest" HorizontalAlignment="Left" Margin="151.684,0,0,0" IsChecked="{Binding Ch1_SealTest}" IsEnabled="{Binding VC_Channel1}"/>
+                <Label x:Name="label" Content="R Membrane [MO]" HorizontalAlignment="Right" Margin="0,1.04,121.066,-6.053" d:LayoutOverrides="Height"/>
+                <Label x:Name="label_Copy" Content="R Seal [MO]" HorizontalAlignment="Right" Margin="0,145.038,139.066,148.039" Grid.Row="1" d:LayoutOverrides="Height"/>
             </Grid>
         </GroupBox>
     </Grid>
