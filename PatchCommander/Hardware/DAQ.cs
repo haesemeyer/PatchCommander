@@ -245,7 +245,8 @@ namespace PatchCommander.Hardware
                     if (nsamples >= 10)
                     {
                         double[,] read = dataReader.ReadMultiSample((int)nsamples);
-                        ReadDone.Invoke(new ReadDoneEventArgs(read, sampleIndex));
+                        if (ReadDone != null)
+                            ReadDone.Invoke(new ReadDoneEventArgs(read, sampleIndex));
                         //Update our running index
                         sampleIndex += nsamples;
                     }
