@@ -36,66 +36,31 @@ namespace PatchCommander.ViewModels
         #region Members
 
         /// <summary>
-        /// Collection of values to plot on the live plot of channel 1
+        /// Cache of seal test samples
         /// </summary>
-        ChartCollection<double> _plotData_live1;
+        double[] _stSamples;
 
         /// <summary>
-        /// Producer consumer for live plotting on channel 1
+        /// True if channel 1 is in voltage clamp
         /// </summary>
-        ProducerConsumer<double> _ch1LiveDump;
+        bool _vc_ch1;
 
         /// <summary>
-        /// Collection of values to plot on the seal test plot of channel 1
+        /// True if channel 2 is in voltage clamp
         /// </summary>
-        ChartCollection<double, double> _plotData_seal1;
+        bool _vc_ch2;
 
         /// <summary>
-        /// Producer consumer for time-aligned seal test
-        /// on channel 1
+        /// Indicates whether seal test should
+        /// be run on channel 1
         /// </summary>
-        ProducerConsumer<IndexedSample> _ch1SealTestDump;
+        bool _sealTest_ch1;
 
         /// <summary>
-        /// UI update timer for all live plots
+        /// Indicates whether seal test
+        /// should be run on channel 2
         /// </summary>
-        DispatcherTimer _displayUpdater;
-
-        /// <summary>
-        /// Running samples for binning down
-        /// from sampling rate to 2kHz display rate
-        /// </summary>
-        double[] _chartRunningSamples;
-
-        /// <summary>
-        /// Running chart sample index to allow binning
-        /// </summary>
-        long _chartRunningCount;
-
-        /// <summary>
-        /// True when performing seal test on channel 1
-        /// </summary>
-        bool _ch1SealTest;
-
-        /// <summary>
-        /// Seal resistance on channel 1
-        /// </summary>
-        double _rSealCh1;
-
-        /// <summary>
-        /// Membrane resistance on channel 1
-        /// </summary>
-        double _rMembCh1;
-
-        /// <summary>
-        /// Array to buffer our standard seal-test samples
-        /// </summary>
-        private double[] _stSamples;
-
-        /// <summary>
-        /// X-Axis range on the seal test plot
-        /// </summary>
-        private Range<double> _ch1_sealXRange = new Range<double>(0, 100);
+        bool _sealTest_ch2;
 
         #endregion
 
@@ -103,168 +68,74 @@ namespace PatchCommander.ViewModels
         {
             if (IsInDesignMode)
                 return;
-            _plotData_live1 = new ChartCollection<double>(2000);
-            _plotData_seal1 = new ChartCollection<double, double>();
-            //Create buffer with 1s worth of storage
-            _ch1LiveDump = new ProducerConsumer<double>(HardwareSettings.DAQ.Rate);
-            _ch1SealTestDump = new ProducerConsumer<IndexedSample>(HardwareSettings.DAQ.Rate);
-            _displayUpdater = new DispatcherTimer();
-            _displayUpdater.Tick += TimerEvent;
-            _displayUpdater.Interval = new TimeSpan(0, 0, 0, 0, 5);
-            _displayUpdater.Start();
-            RaisePropertyChanged(nameof(VC_Channel1));
-        }
-
-        /// <summary>
-        /// Our display update timer event
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void TimerEvent(object sender, EventArgs e)
-        {
-            UpdateCh1LivePlot();
-            if (Ch1_SealTest)
-                UpdateCh1SealTest();
+            //Subscribe to channel view events
+            ChannelViewModel.ClampModeChanged += ClampModeChanged;
+            ChannelViewModel.SealTestChanged += SealTestChanged;
         }
 
         #region Properties
 
         /// <summary>
-        /// Membrane resistance on channel 1
-        /// </summary>
-        public double RMembraneCh1
-        {
-            get
-            {
-                return _rMembCh1;
-            }
-            set
-            {
-                _rMembCh1 = value;
-                RaisePropertyChanged(nameof(RMembraneCh1));
-            }
-        }
-
-        /// <summary>
-        /// Seal resistance on channel 1
-        /// </summary>
-        public double RSealCh1
-        {
-            get
-            {
-                return _rSealCh1;
-            }
-            set
-            {
-                _rSealCh1 = value;
-                RaisePropertyChanged(nameof(RSealCh1));
-            }
-        }
-
-        public ChartCollection<double> PlotData_live1
-        {
-            get
-            {
-                return _plotData_live1;
-            }
-            set
-            {
-                _plotData_live1 = value;
-                RaisePropertyChanged(nameof(PlotData_live1));
-            }
-        }
-
-        public ChartCollection<double, double> PlotData_seal1
-        {
-            get
-            {
-                return _plotData_seal1;
-            }
-            set
-            {
-                _plotData_seal1 = value;
-                RaisePropertyChanged(nameof(PlotData_seal1));
-            }
-        }
-
-        /// <summary>
-        /// Indicates and sets whether channel1 is in voltage or current clamp mode
+        /// Indicates if channel1 is in voltage clamp
         /// </summary>
         public bool VC_Channel1
         {
             get
             {
-                if (IsInDesignMode)
-                    return true;
-                return HardwareManager.DaqBoard.Channel1Mode == DAQ.ClampMode.VoltageClamp;
+                return _vc_ch1;
             }
-            set
+            private set
             {
-                if (value)
-                    HardwareManager.DaqBoard.Channel1Mode = DAQ.ClampMode.VoltageClamp;
-                else
-                    HardwareManager.DaqBoard.Channel1Mode = DAQ.ClampMode.CurrentClamp;
+                _vc_ch1 = value;
                 RaisePropertyChanged(nameof(VC_Channel1));
-                RaisePropertyChanged(nameof(Ch1_UnitLabel));
-                RaisePropertyChanged(nameof(Ch1_UnitRange));
             }
         }
 
         /// <summary>
-        /// Depending on current mode sets the y-axis unit label of channel1 charts
+        /// Indicates if channel2 is in voltage clamp
         /// </summary>
-        public string Ch1_UnitLabel
+        public bool VC_Channel2
         {
             get
             {
-                if (VC_Channel1)
-                    return "Current [pA]";
-                else
-                    return "Voltage [mV]";
+                return _vc_ch2;
+            }
+            private set
+            {
+                _vc_ch2 = value;
+                RaisePropertyChanged(nameof(VC_Channel2));
             }
         }
 
         /// <summary>
-        /// Depending on current mode sets the y-axis range of channel1 charts
+        /// Indicates if channel1 should produce seal test
         /// </summary>
-        public Range<double> Ch1_UnitRange
+        public bool SealTest_Channel1
         {
             get
             {
-                if (VC_Channel1)
-                    return new Range<double>(-2000, 2000);
-                else
-                    return new Range<double>(-100, 100);
+                return _sealTest_ch1;
             }
-        }
-
-        public Range<double> Ch1_SealXRange
-        {
-            get
+            private set
             {
-                return _ch1_sealXRange;
-            }
-            set
-            {
-                _ch1_sealXRange = value;
-                RaisePropertyChanged(nameof(Ch1_SealXRange));
+                _sealTest_ch1 = value;
+                RaisePropertyChanged(nameof(SealTest_Channel1));
             }
         }
 
         /// <summary>
-        /// If true, seal-test values will be generated on channel 1
-        /// when in voltage clamp - ignored in current clamp
+        /// Indicates if channel2 should produce seal test
         /// </summary>
-        public bool Ch1_SealTest
+        public bool SealTest_Channel2
         {
             get
             {
-                return _ch1SealTest;
+                return _sealTest_ch2;
             }
-            set
+            private set
             {
-                _ch1SealTest = value;
-                RaisePropertyChanged(nameof(Ch1_SealTest));
+                _sealTest_ch2 = value;
+                RaisePropertyChanged(nameof(SealTest_Channel2));
             }
         }
 
@@ -288,8 +159,9 @@ namespace PatchCommander.ViewModels
         /// <returns>For each analog out the appropriate voltage samples</returns>
         private double[,] genSamples(double second, int nSamples)
         {
-            double[,] samples = new double[1, nSamples];
-            if (_ch1SealTest && VC_Channel1)
+            double[,] samples = new double[2, nSamples];
+            // Channel 1
+            if (SealTest_Channel1 && VC_Channel1)
             {
                 var sts = sealTestSamples(second, nSamples);
                 for (int i = 0; i < nSamples; i++)
@@ -302,129 +174,21 @@ namespace PatchCommander.ViewModels
                     samples[0, i] = 0;
                 }
             }
+            // Channel 2
+            if (SealTest_Channel2 && VC_Channel2)
+            {
+                var sts = sealTestSamples(second, nSamples);
+                for (int i = 0; i < nSamples; i++)
+                    samples[1, i] = sts[i];
+            }
+            else
+            {
+                for (int i = 0; i < nSamples; i++)
+                {
+                    samples[1, i] = 0;
+                }
+            }
             return samples;
-        }
-
-        private double DAQV_to_pA(double daqVolts)
-        {
-            return daqVolts * 2000; //0.5V per nA - voltage clamp
-        }
-
-        private double DAQV_to_mV(double daqVolts)
-        {
-            return daqVolts * 100.0; //10mV per mv - current clamp
-        }
-
-        /// <summary>
-        /// Gets called by the UI timer to update the display of
-        /// the live plot of channel 1
-        /// </summary>
-        private void UpdateCh1LivePlot()
-        {
-            int bin_factor = HardwareSettings.DAQ.Rate / 2000;
-            int c = _ch1LiveDump.Count;
-            if (c < bin_factor)
-                return;
-            if (_chartRunningSamples == null || _chartRunningSamples.Length != bin_factor)
-                _chartRunningSamples = new double[bin_factor];
-            //we take only a number of samples that evenly fits
-            //into our binning
-            int to_take = c - (c % bin_factor);
-            //create the appropriate chart values as the absolute maximum within the bin
-            double[] values = new double[to_take / bin_factor];
-            for (int i = 0; i < to_take; i++)
-            {
-                _chartRunningSamples[_chartRunningCount % bin_factor] = _ch1LiveDump.Consume();
-                _chartRunningCount++;
-                if (_chartRunningCount % bin_factor == 0)
-                {
-                    int maxIndex = -1;
-                    double absMax = -1;
-                    for (int j = 0; j < bin_factor; j++)
-                    {
-                        if (Math.Abs(_chartRunningSamples[j]) > absMax)
-                        {
-                            absMax = Math.Abs(_chartRunningSamples[j]);
-                            maxIndex = j;
-                        }
-                    }
-                    //add our binned value after conversion into mV (current clamp) or pA (voltage clamp)
-                    var daqvolts = _chartRunningSamples[maxIndex];
-                    if (!VC_Channel1)
-                        daqvolts = DAQV_to_mV(daqvolts);
-                    else
-                        daqvolts = DAQV_to_pA(daqvolts);
-                    values[i / bin_factor] = daqvolts;
-                }
-            }
-            PlotData_live1.Append(values);
-        }
-
-        /// <summary>
-        /// Array to accumulate seal test samples
-        /// for alignment and averaging
-        /// </summary>
-        double[] _sealTestAccum;
-
-        /// <summary>
-        /// Array containing the times of all seal
-        /// test samples
-        /// </summary>
-        double[] _sealTestTime;
-
-        private void UpdateCh1SealTest()
-        {
-            //Some constants that should be settable later
-            int sealTestFreq = 10;
-            int sealTestSamples = HardwareSettings.DAQ.Rate / sealTestFreq;
-            int sealTestOnSamples = sealTestSamples / 2;
-            int nAccum = sealTestFreq / 2;
-            // We want to align plotting of the seal test, such that the
-            // TODO: current spikes at start and end of step are in the middle of the plot
-            // i.e. such that the middle of the OnSamples is in the middle of the plot
-            int zeroPoint = sealTestSamples - sealTestOnSamples / 2;
-            if (_sealTestAccum == null || _sealTestAccum.Length != sealTestSamples)
-            {
-                _sealTestAccum = new double[sealTestSamples];
-                _sealTestTime = new double[sealTestSamples];
-                for (int i = 0; i < sealTestSamples; i++)
-                    _sealTestTime[i] = (1000.0 / HardwareSettings.DAQ.Rate) * i;
-                PlotData_seal1.Capacity = sealTestSamples;
-                Ch1_SealXRange = new Range<double>(0, 1000.0 / sealTestFreq);
-            }
-            // consume samples
-            int c = _ch1SealTestDump.Count;
-            if (c < sealTestSamples)
-                return;
-            for (int i = 0; i < c; i++)
-            {
-                var sample = _ch1SealTestDump.Consume();
-                //check if this sample belongs to a new accumulation window - if yes, plot and reset accumulator
-                long window_index = (sample.Index + zeroPoint) % (sealTestSamples * nAccum);
-                if(window_index == 0)
-                {
-                    //plot
-                    PlotData_seal1.Clear();
-                    PlotData_seal1.Append(_sealTestTime, _sealTestAccum);
-                    //update calculated resistances
-                    double currMax = (_sealTestAccum.Max() - _sealTestAccum.Min()) / 2;
-                    //Seal resistance = voltage_step / max_current
-                    RSealCh1 = (10e-3 / (currMax * 1e-12)) / 1e6; // Resistance in MOhm
-                    //Membrane resistance = voltage_step / steady_state_current
-                    double currSS = 0;
-                    for(int j = sealTestOnSamples-10; j <= sealTestOnSamples + 10; j++)
-                    {
-                        currSS += _sealTestAccum[j] / 21;
-                    }
-                    RMembraneCh1 = (10e-3 / (currSS * 1e-12)) / 1e6; // Resistance in MOhm
-                    //reset accumulator
-                    for (int j = 0; j < sealTestSamples; j++)
-                        _sealTestAccum[j] = 0;
-                }
-                //add new samples to array
-                int array_index = (int)((sample.Index % sealTestSamples - zeroPoint + sealTestSamples) % sealTestSamples);
-                _sealTestAccum[array_index] += DAQV_to_pA(sample.Sample / nAccum);
-            }
         }
 
         /// <summary>
@@ -461,7 +225,8 @@ namespace PatchCommander.ViewModels
         void StartAcquisition()
         {
             //Notify all dependents that acquistion starts
-            Start.Invoke();
+            if (Start != null)
+                Start.Invoke();
             //Start the DAQ board
             HardwareManager.DaqBoard.Start((s, i) => { return genSamples(s, i); });
         }
@@ -469,23 +234,34 @@ namespace PatchCommander.ViewModels
         void StopAcquisition()
         {
             //Notify all dependents that acquisition stops
-            Stop.Invoke();
+            if (Stop != null)
+                Stop.Invoke();
             //Stop the DAQ board
             HardwareManager.DaqBoard.Stop();
         }
 
         /// <summary>
-        /// Event handler whenever a bunch of new samples is acquired
+        /// Gets called whenver the clamp mode changes on a channel view
         /// </summary>
-        /// <param name="samples">The samples received</param>
-        void SampleAcquired(ReadDoneEventArgs args)
+        /// <param name="args"></param>
+        void ClampModeChanged(ClampModeChangedArgs args)
         {
-            for (int i = 0; i < args.Data.GetLength(1); i++)
-            {
-                _ch1LiveDump.Produce(args.Data[0, i]);
-                if (Ch1_SealTest)
-                    _ch1SealTestDump.Produce(new IndexedSample(args.Data[0, i], args.StartIndex + i));
-            }
+            if (args.ChannelIndex == 0)
+                VC_Channel1 = (args.Mode == DAQ.ClampMode.VoltageClamp);
+            else if (args.ChannelIndex == 1)
+                VC_Channel2 = (args.Mode == DAQ.ClampMode.VoltageClamp);
+        }
+
+        /// <summary>
+        /// Gets called whenver the seal test mode changed on a channel view
+        /// </summary>
+        /// <param name="args"></param>
+        void SealTestChanged(SealTestChangedArgs args)
+        {
+            if (args.ChannelIndex == 0)
+                SealTest_Channel1 = args.SealTest;
+            else if (args.ChannelIndex == 1)
+                SealTest_Channel2 = args.SealTest;
         }
 
         #endregion

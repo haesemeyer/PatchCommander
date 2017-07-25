@@ -15,12 +15,7 @@
         <Binding Source="{StaticResource mvmDataSource}" x:Name="ViewModel" x:FieldModifier="public"/>
     </GUI:WindowAwareView.DataContext>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="363*"/>
-            <RowDefinition Height="469*"/>
-            <RowDefinition Height="68*"/>
-        </Grid.RowDefinitions>
-        <GroupBox x:Name="groupBox" Header="Channel 1" FontWeight="Bold" Margin="10,18,10,2" Grid.RowSpan="2">
+        <GroupBox x:Name="groupBox" Header="Channel not assigned" FontWeight="Bold" Margin="10,18,10,2" Grid.RowSpan="2">
             <Grid Margin="10,0,-2,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="21*"/>

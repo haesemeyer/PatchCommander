@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:PatchCommander"
         xmlns:Views="clr-namespace:PatchCommander.Views" x:Class="PatchCommander.MainWindow"
         mc:Ignorable="d"
-        Title="Patch Commander" Height="984.211" Width="1318.421">
-    <Grid Margin="0,0,2,0">
-        <Views:MainView Margin="19.681,25.791,0,27.419" d:LayoutOverrides="TopMargin, BottomMargin" HorizontalAlignment="Left"/>
+        Title="Patch Commander" Height="1122.594" Width="1318.421">
+    <Grid Margin="10,10,2,5.263">
+        <Views:MainView Margin="12.967,3.705,10.953,20.415" d:LayoutOverrides="LeftMargin, RightMargin"/>
     </Grid>
 </Window>

@@ -12,6 +12,32 @@ using NationalInstruments.Controls;
 
 namespace PatchCommander.ViewModels
 {
+    class ClampModeChangedArgs
+    {
+        public readonly int ChannelIndex;
+
+        public readonly DAQ.ClampMode Mode;
+
+        public ClampModeChangedArgs(int index, DAQ.ClampMode mode)
+        {
+            ChannelIndex = index;
+            Mode = mode;
+        }
+    }
+
+    class SealTestChangedArgs
+    {
+        public readonly int ChannelIndex;
+
+        public readonly bool SealTest;
+
+        public SealTestChangedArgs(int index, bool test)
+        {
+            ChannelIndex = index;
+            SealTest = test;
+        }
+    }
+
     /// <summary>
     /// View model for one fully controllable
     /// acquisition channel
@@ -109,6 +135,8 @@ namespace PatchCommander.ViewModels
             _displayUpdater.Interval = new TimeSpan(0, 0, 0, 0, 5);
             _displayUpdater.Start();
             RaisePropertyChanged(nameof(VC));
+            if (ClampModeChanged != null)
+                ClampModeChanged.Invoke(new ClampModeChangedArgs(ChannelIndex, VC ? DAQ.ClampMode.VoltageClamp : DAQ.ClampMode.CurrentClamp));
         }
 
         /// <summary>
@@ -198,14 +226,26 @@ namespace PatchCommander.ViewModels
             {
                 if (IsInDesignMode)
                     return true;
-                return HardwareManager.DaqBoard.Channel1Mode == DAQ.ClampMode.VoltageClamp;
+                if(ChannelIndex == 0)
+                    return HardwareManager.DaqBoard.Channel1Mode == DAQ.ClampMode.VoltageClamp;
+                else
+                    return HardwareManager.DaqBoard.Channel2Mode == DAQ.ClampMode.VoltageClamp;
             }
             set
             {
+                if (IsInDesignMode)
+                    return;
+                DAQ.ClampMode mode;
                 if (value)
-                    HardwareManager.DaqBoard.Channel1Mode = DAQ.ClampMode.VoltageClamp;
+                    mode = DAQ.ClampMode.VoltageClamp;
                 else
-                    HardwareManager.DaqBoard.Channel1Mode = DAQ.ClampMode.CurrentClamp;
+                    mode = DAQ.ClampMode.CurrentClamp;
+                if (ChannelIndex == 0)
+                    HardwareManager.DaqBoard.Channel1Mode = mode;
+                else
+                    HardwareManager.DaqBoard.Channel2Mode = mode;
+                if (ClampModeChanged != null)
+                    ClampModeChanged.Invoke(new ClampModeChangedArgs(ChannelIndex, mode));
                 RaisePropertyChanged(nameof(VC));
                 RaisePropertyChanged(nameof(UnitLabel));
                 RaisePropertyChanged(nameof(UnitRange));
@@ -271,8 +311,12 @@ namespace PatchCommander.ViewModels
             {
                 _sealTest = value;
                 RaisePropertyChanged(nameof(SealTest));
+                if (SealTestChanged != null)
+                    SealTestChanged.Invoke(new SealTestChangedArgs(ChannelIndex, value));
             }
         }
+
+        public int ChannelIndex { get; set; }
 
         #endregion
 
@@ -346,7 +390,7 @@ namespace PatchCommander.ViewModels
             int sealTestOnSamples = sealTestSamples / 2;
             int nAccum = sealTestFreq / 2;
             // We want to align plotting of the seal test, such that the
-            // TODO: current spikes at start and end of step are in the middle of the plot
+            // current spikes at start and end of step are in the middle of the plot
             // i.e. such that the middle of the OnSamples is in the middle of the plot
             int zeroPoint = sealTestSamples - sealTestOnSamples / 2;
             if (_sealTestAccum == null || _sealTestAccum.Length != sealTestSamples)
@@ -401,11 +445,19 @@ namespace PatchCommander.ViewModels
         {
             for (int i = 0; i < args.Data.GetLength(1); i++)
             {
-                _liveDump.Produce(args.Data[0, i]);
+                _liveDump.Produce(args.Data[ChannelIndex, i]);
                 if (SealTest)
-                    _sealTestDump.Produce(new IndexedSample(args.Data[0, i], args.StartIndex + i));
+                    _sealTestDump.Produce(new IndexedSample(args.Data[ChannelIndex, i], args.StartIndex + i));
             }
         }
+
+        #endregion
+
+        #region Events
+
+        public static event Action<ClampModeChangedArgs> ClampModeChanged;
+
+        public static event Action<SealTestChangedArgs> SealTestChanged;
 
         #endregion
 
