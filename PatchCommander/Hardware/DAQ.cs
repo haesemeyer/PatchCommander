@@ -6,6 +6,7 @@ using System.Text;
 using NationalInstruments.DAQmx;
 using MHApi.Utilities;
 using MHApi.Threading;
+using MHApi.GUI;
 using System.Threading;
 
 namespace PatchCommander.Hardware
@@ -106,6 +107,8 @@ namespace PatchCommander.Hardware
         /// </summary>
         public DAQ()
         {
+            if (ViewModelBase.IsInDesignMode)
+                return;
             //Create digital out tasks and writers to control channel mode
             _chModeTasks = new Task[2];
             _chModeTasks[0] = new Task("Ch1Mode");
