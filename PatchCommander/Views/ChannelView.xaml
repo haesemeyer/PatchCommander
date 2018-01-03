@@ -66,7 +66,7 @@
                 <CheckBox x:Name="checkBox" Content="Voltage Clamp                   " HorizontalAlignment="Left" Margin="24.703,1.904,0,3.991" IsChecked="{Binding VC}" d:LayoutOverrides="Height" Width="106.982"/>
                 <ToggleButton x:Name="toggleButton" Content="SealTest" HorizontalAlignment="Left" Margin="151.684,0,0,0" IsChecked="{Binding SealTest}" IsEnabled="{Binding VC}"/>
                 <Label x:Name="label" Content="R Membrane [MO]" HorizontalAlignment="Right" Margin="0,1.04,121.066,-6.053" d:LayoutOverrides="Height"/>
-                <Label x:Name="label_Copy" Content="R Seal [MO]" HorizontalAlignment="Right" Margin="0,145.038,139.066,148.039" Grid.Row="1" d:LayoutOverrides="Height"/>
+                <Label x:Name="label_Copy" Content="R Seal [MO]" HorizontalAlignment="Right" Margin="0,173.038,139.066,138.039" Grid.Row="1"/>
             </Grid>
         </GroupBox>
     </Grid>
