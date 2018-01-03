@@ -7,9 +7,11 @@
              xmlns:local="clr-namespace:PatchCommander.Views"
              xmlns:GUI="clr-namespace:MHApi.GUI"
              xmlns:ni="http://schemas.ni.com/controls/2009/xaml/presentation"
+             xmlns:PatchCommander="clr-namespace:PatchCommander"
              x:Class="PatchCommander.Views.MainView"
              mc:Ignorable="d" Width="1274.5" Height="1052.211">
     <GUI:WindowAwareView.Resources>
+        <PatchCommander:BoolAcquiringConverter x:Key="BoolAcquiringConverter"/>
         <GUI:NegateBoolConverter x:Key="NegateBoolConverter"/>
         <vm:MainViewModel x:Key="mvmDataSource"/>
     </GUI:WindowAwareView.Resources>
@@ -19,6 +21,25 @@
     <Grid Height="1046.211" VerticalAlignment="Top">
         <local:ChannelView Margin="0,0,10.5,0" VerticalAlignment="Top" d:LayoutOverrides="Height" ChannelIndex="0"/>
         <local:ChannelView Margin="0.5,419,10,213.211" ChannelIndex="1"/>
-        <Button x:Name="button" Content="Start/Stop" HorizontalAlignment="Left" Margin="204,0,0,28.251" VerticalAlignment="Bottom" Width="75" Click="btnStartStop_Click"/>
+        <Grid Height="213.211" VerticalAlignment="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="253*"/>
+                <ColumnDefinition Width="719*"/>
+                <ColumnDefinition Width="303*"/>
+            </Grid.ColumnDefinitions>
+            <Grid d:LayoutOverrides="LeftMargin, RightMargin, TopMargin, BottomMargin">
+                <Button x:Name="button" Content="{Binding IsAcquiring, Converter={StaticResource BoolAcquiringConverter}}"  VerticalAlignment="Bottom" Click="btnStartStop_Click" Margin="77,0,76,10"/>
+            </Grid>
+            <Grid Grid.Column="1" d:LayoutOverrides="LeftMargin, RightMargin, TopMargin, BottomMargin">
+                <TabControl x:Name="tabControl">
+                    <TabItem Header="Channel 1">
+                        <Grid Background="#FFE5E5E5"/>
+                    </TabItem>
+                    <TabItem Header="Channel 2">
+                        <Grid Background="#FFE5E5E5"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
     </Grid>
 </GUI:WindowAwareView>

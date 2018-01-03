@@ -62,6 +62,11 @@ namespace PatchCommander.ViewModels
         /// </summary>
         bool _sealTest_ch2;
 
+        /// <summary>
+        /// Indicates whether data is currently acquired from the DAQ board
+        /// </summary>
+        bool _isAcquiring;
+
         #endregion
 
         public MainViewModel()
@@ -136,6 +141,22 @@ namespace PatchCommander.ViewModels
             {
                 _sealTest_ch2 = value;
                 RaisePropertyChanged(nameof(SealTest_Channel2));
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether data is currently being acquired from the daq board
+        /// </summary>
+        public bool IsAcquiring
+        {
+            get
+            {
+                return _isAcquiring;
+            }
+            set
+            {
+                _isAcquiring = value;
+                RaisePropertyChanged(nameof(IsAcquiring));
             }
         }
 
@@ -229,6 +250,7 @@ namespace PatchCommander.ViewModels
                 Start.Invoke();
             //Start the DAQ board
             HardwareManager.DaqBoard.Start((s, i) => { return genSamples(s, i); });
+            IsAcquiring = true;
         }
 
         void StopAcquisition()
@@ -238,6 +260,7 @@ namespace PatchCommander.ViewModels
                 Stop.Invoke();
             //Stop the DAQ board
             HardwareManager.DaqBoard.Stop();
+            IsAcquiring = false;
         }
 
         /// <summary>
