@@ -413,20 +413,27 @@ namespace PatchCommander.ViewModels
                 long window_index = (sample.Index + zeroPoint) % (sealTestSamples * nAccum);
                 if (window_index == 0)
                 {
-                    //plot
-                    PlotData_Seal.Clear();
-                    PlotData_Seal.Append(_sealTestTime, _sealTestAccum);
                     //update calculated resistances
                     double currMax = (_sealTestAccum.Max() - _sealTestAccum.Min()) / 2;
                     //Seal resistance = voltage_step / max_current
                     RSeal = (10e-3 / (currMax * 1e-12)) / 1e6; // Resistance in MOhm
                     //Membrane resistance = voltage_step / steady_state_current
-                    double currSS = 0;
+                    double currSS = 0;//The steady state current (seal test peak)
+                    double currMean = 0;//The mean current (start of seal test window)
                     for (int j = sealTestOnSamples - 10; j <= sealTestOnSamples + 10; j++)
                     {
                         currSS += _sealTestAccum[j] / 21;
                     }
-                    RMembrane = (10e-3 / (currSS * 1e-12)) / 1e6; // Resistance in MOhm
+                    for (int j = 0; j <= 20; j++)
+                    {
+                        currMean += _sealTestAccum[j] / 21;
+                    }
+                    RMembrane = (10e-3 / ((currSS-currMean) * 1e-12)) / 1e6; // Resistance in MOhm
+                    //plot
+                    PlotData_Seal.Clear();
+                    for (int j = 0; j < _sealTestAccum.Length; j++)
+                        _sealTestAccum[j] -= currMean;
+                    PlotData_Seal.Append(_sealTestTime, _sealTestAccum);
                     //reset accumulator
                     for (int j = 0; j < sealTestSamples; j++)
                         _sealTestAccum[j] = 0;
