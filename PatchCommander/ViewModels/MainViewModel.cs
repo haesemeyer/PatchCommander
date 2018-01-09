@@ -277,17 +277,18 @@ namespace PatchCommander.ViewModels
         {
             double[,] samples = new double[2, nSamples];
             // Channel 1
+            double offset = (VC_Channel1 && HoldingCh1) ? milliVoltsToAOVolts(HoldingVoltageCh1) : 0;
             if (SealTest_Channel1 && VC_Channel1)
             {
                 var sts = sealTestSamples(second, nSamples);
                 for (int i = 0; i < nSamples; i++)
-                    samples[0, i] = sts[i];
+                    samples[0, i] = sts[i] + offset;
             }
             else
             {
                 for (int i = 0; i < nSamples; i++)
                 {
-                    samples[0, i] = 0;
+                    samples[0, i] = offset;
                 }
             }
             // Channel 2
