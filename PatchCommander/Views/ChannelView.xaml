@@ -60,7 +60,7 @@
                     </ni:Graph>
                     <Grid Grid.Column="1">
                         <ni:GaugeDouble Margin="10,4,107,0" Height="140" VerticalAlignment="Top" Value="{Binding RMembrane}" Range="0, 10000, System.Double" PointerBrush="#FF53E0E0" Background="White" InteractionMode="EditRange"/>
-                        <ni:GaugeDouble Margin="10,0,107,5.538" Height="140" VerticalAlignment="Bottom" Value="{Binding RSeal}" Range="0, 100, System.Double" PointerBrush="#FFD23AFF"/>
+                        <ni:GaugeDouble Margin="10,0,107,5.538" Height="140" VerticalAlignment="Bottom" Value="{Binding RSeal}" Range="0, 300, System.Double" PointerBrush="#FFD23AFF" InteractionMode="EditRange"/>
                     </Grid>
                 </Grid>
                 <CheckBox x:Name="checkBox" Content="Voltage Clamp                   " HorizontalAlignment="Left" Margin="24.703,1.904,0,3.991" IsChecked="{Binding VC}" d:LayoutOverrides="Height" Width="106.982"/>
