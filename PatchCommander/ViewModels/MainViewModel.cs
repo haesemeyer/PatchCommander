@@ -308,6 +308,28 @@ namespace PatchCommander.ViewModels
         }
 
         /// <summary>
+        /// Function to convert desired millivoltages in voltage clamp
+        /// to corresponding analog out values to the amplifier
+        /// </summary>
+        /// <param name="mv">The desired milli-volts</param>
+        /// <returns>The analog out voltage to apply</returns>
+        private double milliVoltsToAOVolts(double mv)
+        {
+            return mv / 20;
+        }
+
+        /// <summary>
+        /// Function to convert desired pico-amps injection in current clamp
+        /// to corresponding analog out values to the amplifier
+        /// </summary>
+        /// <param name="pa">The desired pico-amps</param>
+        /// <returns>The analog out voltage to apply</returns>
+        private double picoAmpsToAOVolts(double pa)
+        {
+            return pa / 400;
+        }
+
+        /// <summary>
         /// For one electrode generates our seal test samples for one whole second
         /// </summary>
         /// <param name="second">The starting second</param>
@@ -330,7 +352,7 @@ namespace PatchCommander.ViewModels
                 for(int i = 0; i<nSamples; i++)
                 {
                     if (i % sam_per_seal < sam_on)
-                        _stSamples[i] = ampMV / 20;
+                        _stSamples[i] = milliVoltsToAOVolts(ampMV);
                     else
                         _stSamples[i] = 0;
                 }
