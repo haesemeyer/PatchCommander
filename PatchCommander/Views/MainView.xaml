@@ -45,6 +45,12 @@
                                     <ni:GeneralValueFormatter Format="{}{0} mV" ShortFormat="{x:Null}"/>
                                 </ni:NumericTextBoxDouble.ValueFormatter>
                             </ni:NumericTextBoxDouble>
+                            <CheckBox x:Name="checkBox_Copy" Content="Inject:" HorizontalAlignment="Left" Margin="5.471,81.039,0,89.113" d:LayoutOverrides="Height" IsEnabled="{Binding VC_Channel1, Converter={StaticResource NegateBoolConverter}, Mode=OneWay}" IsChecked="{Binding InjectCh1}"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="76.667,80.372,0,86.586" Width="62" Range="-1000, 1000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" d:LayoutOverrides="HorizontalAlignment, VerticalAlignment" Interval="10" Value="{Binding InjectionCurrentCh1}">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} pA" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Channel 2">

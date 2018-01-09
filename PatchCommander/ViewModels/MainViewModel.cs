@@ -83,9 +83,19 @@ namespace PatchCommander.ViewModels
         bool _holdingCh1;
 
         /// <summary>
-        /// Indicates the desired holding voltage for channel 1
+        /// Indicates the desired holding voltage in mV for channel 1
         /// </summary>
         double _holdingVoltageCh1;
+
+        /// <summary>
+        /// Indicates whether current should be injected on channel 1
+        /// </summary>
+        bool _injectCh1;
+
+        /// <summary>
+        /// Indicates the desired current injection in pA for channel 1
+        /// </summary>
+        double _injectionCurrentCh1;
 
         #endregion
 
@@ -230,7 +240,7 @@ namespace PatchCommander.ViewModels
         }
 
         /// <summary>
-        /// Indicates the holding voltage of channel 1
+        /// Indicates the holding voltage of channel 1 in mV
         /// </summary>
         public double HoldingVoltageCh1
         {
@@ -242,6 +252,38 @@ namespace PatchCommander.ViewModels
             {
                 _holdingVoltageCh1 = value;
                 RaisePropertyChanged(nameof(HoldingVoltageCh1));
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether current should be injected on channel 1
+        /// </summary>
+        public bool InjectCh1
+        {
+            get
+            {
+                return _injectCh1;
+            }
+            set
+            {
+                _injectCh1 = value;
+                RaisePropertyChanged(nameof(InjectCh1));
+            }
+        }
+
+        /// <summary>
+        /// The desired injection current in pA for channel 1
+        /// </summary>
+        public double InjectionCurrentCh1
+        {
+            get
+            {
+                return _injectionCurrentCh1;
+            }
+            set
+            {
+                _injectionCurrentCh1 = value;
+                RaisePropertyChanged(nameof(InjectionCurrentCh1));
             }
         }
 
@@ -277,7 +319,19 @@ namespace PatchCommander.ViewModels
         {
             double[,] samples = new double[2, nSamples];
             // Channel 1
-            double offset = (VC_Channel1 && HoldingCh1) ? milliVoltsToAOVolts(HoldingVoltageCh1) : 0;
+            double offset = 0;//= (VC_Channel1 && HoldingCh1) ? milliVoltsToAOVolts(HoldingVoltageCh1) : 0;
+            if (VC_Channel1)
+            {
+                //Set offset to holding voltage if requested
+                if (HoldingCh1)
+                    offset = milliVoltsToAOVolts(HoldingVoltageCh1);
+            }
+            else
+            {
+                //Set offset to injection current if requested
+                if (InjectCh1)
+                    offset = picoAmpsToAOVolts(InjectionCurrentCh1);
+            }
             if (SealTest_Channel1 && VC_Channel1)
             {
                 var sts = sealTestSamples(second, nSamples);
