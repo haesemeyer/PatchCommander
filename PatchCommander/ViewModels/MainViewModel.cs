@@ -77,6 +77,16 @@ namespace PatchCommander.ViewModels
         /// </summary>
         string _baseFNameCh1;
 
+        /// <summary>
+        /// Indicates whether holding voltage is requested for channel 1
+        /// </summary>
+        bool _holdingCh1;
+
+        /// <summary>
+        /// Indicates the desired holding voltage for channel 1
+        /// </summary>
+        double _holdingVoltageCh1;
+
         #endregion
 
         public MainViewModel()
@@ -200,6 +210,38 @@ namespace PatchCommander.ViewModels
             {
                 _baseFNameCh1 = value;
                 RaisePropertyChanged(nameof(BaseFNameCh1));
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether holding voltage should be applied to channel 1
+        /// </summary>
+        public bool HoldingCh1
+        {
+            get
+            {
+                return _holdingCh1;
+            }
+            set
+            {
+                _holdingCh1 = value;
+                RaisePropertyChanged(nameof(HoldingCh1));
+            }
+        }
+
+        /// <summary>
+        /// Indicates the holding voltage of channel 1
+        /// </summary>
+        public double HoldingVoltageCh1
+        {
+            get
+            {
+                return _holdingVoltageCh1;
+            }
+            set
+            {
+                _holdingVoltageCh1 = value;
+                RaisePropertyChanged(nameof(HoldingVoltageCh1));
             }
         }
 

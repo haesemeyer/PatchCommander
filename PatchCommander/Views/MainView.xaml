@@ -39,6 +39,12 @@
                             <ni:LED x:Name="led1" Content="LED" FalseContent="Stopped" HorizontalAlignment="Left" Height="23" Margin="76.667,8.293,0,153.957" TrueContent="Recording" Width="23" TrueBrush="#FFD60000" FalseBrush="#FF702424" d:LayoutOverrides="TopMargin, BottomMargin" Value="{Binding IsRecordingCh1}"/>
                             <Label x:Name="label" Content="Base filename:" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom"/>
                             <TextBox x:Name="textBox" HorizontalAlignment="Left" Height="23" Margin="100.6,0,0,8.666" TextWrapping="Wrap" Text="{Binding BaseFNameCh1}" VerticalAlignment="Bottom" Width="120"/>
+                            <CheckBox x:Name="checkBox" Content="Holding:" HorizontalAlignment="Left" Margin="5.471,52.039,0,0" VerticalAlignment="Top" IsEnabled="{Binding VC_Channel1, Mode=OneWay}" IsChecked="{Binding HoldingCh1}"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="76.667,51.372,0,115.586" Width="62" d:LayoutOverrides="HorizontalAlignment" Range="-100, 100, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding HoldingVoltageCh1}">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} mV" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Channel 2">
