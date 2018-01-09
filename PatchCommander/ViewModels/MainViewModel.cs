@@ -67,10 +67,21 @@ namespace PatchCommander.ViewModels
         /// </summary>
         bool _isAcquiring;
 
+        /// <summary>
+        /// Indicates wheter data is currently written to file for Ch1
+        /// </summary>
+        bool _isRecordingCh1;
+
+        /// <summary>
+        /// The base filename for channel 1
+        /// </summary>
+        string _baseFNameCh1;
+
         #endregion
 
         public MainViewModel()
         {
+            BaseFNameCh1 = "Fish_01";
             if (IsInDesignMode)
                 return;
             //Subscribe to channel view events
@@ -160,10 +171,43 @@ namespace PatchCommander.ViewModels
             }
         }
 
+        /// <summary>
+        /// Indicates whether data is currently written to file for Ch1
+        /// </summary>
+        public bool IsRecordingCh1
+        {
+            get
+            {
+                return _isRecordingCh1;
+            }
+            set
+            {
+                _isRecordingCh1 = value;
+                RaisePropertyChanged(nameof(IsRecordingCh1));
+            }
+        }
+
+        /// <summary>
+        /// The base filename for channel 1
+        /// </summary>
+        public string BaseFNameCh1
+        {
+            get
+            {
+                return _baseFNameCh1;
+            }
+            set
+            {
+                _baseFNameCh1 = value;
+                RaisePropertyChanged(nameof(BaseFNameCh1));
+            }
+        }
+
         #endregion
 
         #region Methods
 
+        #region Button Handlers
         public void StartStop()
         {
             if (HardwareManager.DaqBoard.IsRunning)
@@ -171,6 +215,15 @@ namespace PatchCommander.ViewModels
             else
                 StartAcquisition();
         }
+
+        public void StartStopRecCh1()
+        {
+            if (IsRecordingCh1)
+                StopRecording(1);
+            else
+                StartRecording(1);
+        }
+        #endregion Button Handlers
 
         /// <summary>
         /// Generates necessary analog out samples
@@ -258,9 +311,27 @@ namespace PatchCommander.ViewModels
             //Notify all dependents that acquisition stops
             if (Stop != null)
                 Stop.Invoke();
+            if (IsRecordingCh1)
+                StopRecording(1);
             //Stop the DAQ board
             HardwareManager.DaqBoard.Stop();
             IsAcquiring = false;
+        }
+
+        void StartRecording(int channelIndex)
+        {
+            if(channelIndex == 1)
+            {
+                IsRecordingCh1 = true;
+            }
+        }
+
+        void StopRecording(int channelIndex)
+        {
+            if (channelIndex == 1)
+            {
+                IsRecordingCh1 = false;
+            }
         }
 
         /// <summary>
@@ -285,6 +356,22 @@ namespace PatchCommander.ViewModels
                 SealTest_Channel1 = args.SealTest;
             else if (args.ChannelIndex == 1)
                 SealTest_Channel2 = args.SealTest;
+        }
+
+        /// <summary>
+        /// Creates a unique recording filename
+        /// </summary>
+        /// <param name="channelIndex">The index of the channel for which the filename should be created</param>
+        /// <returns>The filename string without extension</returns>
+        string CreateFilename(int channelIndex)
+        {
+            if (channelIndex == 1)
+            {
+                DateTime now = DateTime.Now;
+                return string.Format("{0}_{1}_{2}_{3}_{4}", BaseFNameCh1, now.Year, now.Month, now.Day, now.Ticks);
+            }
+            else
+                throw new NotImplementedException("Channel 2 not currently implemented");
         }
 
         #endregion

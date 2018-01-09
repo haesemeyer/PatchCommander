@@ -63,6 +63,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BoolAcquiringConverter.cs" />
+    <Compile Include="BoolRecordingConverter.cs" />
     <Compile Include="Hardware\DAQ.cs" />
     <Compile Include="Hardware\HardwareManager.cs" />
     <Compile Include="Hardware\HardwareSettings.cs" />

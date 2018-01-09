@@ -24,6 +24,11 @@ namespace PatchCommander.Views
             _viewModel.StartStop();
         }
 
+        private void btnCh1Record_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.StartStopRecCh1();
+        }
+
         protected override void WindowClosing(object sender, CancelEventArgs e)
         {
             //Clean up when the window closes

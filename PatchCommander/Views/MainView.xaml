@@ -11,6 +11,7 @@
              x:Class="PatchCommander.Views.MainView"
              mc:Ignorable="d" Width="1274.5" Height="1052.211">
     <GUI:WindowAwareView.Resources>
+        <PatchCommander:BoolRecordingConverter x:Key="BoolRecordingConverter"/>
         <PatchCommander:BoolAcquiringConverter x:Key="BoolAcquiringConverter"/>
         <GUI:NegateBoolConverter x:Key="NegateBoolConverter"/>
         <vm:MainViewModel x:Key="mvmDataSource"/>
@@ -33,7 +34,12 @@
             <Grid Grid.Column="1" d:LayoutOverrides="LeftMargin, RightMargin, TopMargin, BottomMargin">
                 <TabControl x:Name="tabControl">
                     <TabItem Header="Channel 1">
-                        <Grid Background="#FFE5E5E5"/>
+                        <Grid Background="#FFE5E5E5">
+                            <Button x:Name="btnRecCh1" Content="{Binding IsRecordingCh1, Converter={StaticResource BoolRecordingConverter}}" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="60.333" Click="btnCh1Record_Click" IsEnabled="{Binding IsAcquiring}"/>
+                            <ni:LED x:Name="led1" Content="LED" FalseContent="Stopped" HorizontalAlignment="Left" Height="23" Margin="76.667,8.293,0,153.957" TrueContent="Recording" Width="23" TrueBrush="#FFD60000" FalseBrush="#FF702424" d:LayoutOverrides="TopMargin, BottomMargin" Value="{Binding IsRecordingCh1}"/>
+                            <Label x:Name="label" Content="Base filename:" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom"/>
+                            <TextBox x:Name="textBox" HorizontalAlignment="Left" Height="23" Margin="100.6,0,0,8.666" TextWrapping="Wrap" Text="{Binding BaseFNameCh1}" VerticalAlignment="Bottom" Width="120"/>
+                        </Grid>
                     </TabItem>
                     <TabItem Header="Channel 2">
                         <Grid Background="#FFE5E5E5"/>
