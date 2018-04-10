@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 using MHApi.GUI;
 using MHApi.Threading;
@@ -71,6 +72,11 @@ namespace PatchCommander.ViewModels
         /// Indicates wheter data is currently written to file for Ch1
         /// </summary>
         bool _isRecordingCh1;
+
+        /// <summary>
+        /// The file that is currently being recorded to in Ch1
+        /// </summary>
+        BinaryWriter _ch1File;
 
         /// <summary>
         /// The base filename for channel 1
@@ -439,17 +445,26 @@ namespace PatchCommander.ViewModels
 
         void StartRecording(int channelIndex)
         {
-            if(channelIndex == 1)
+            //Attach ourselves to the sample read event queue
+            if(!IsRecordingCh1)
+                HardwareManager.DaqBoard.ReadDone += RecordSamples;
+            if (channelIndex == 1)
             {
+                _ch1File = new BinaryWriter(File.OpenWrite(CreateFilename(1)+".data"));
                 IsRecordingCh1 = true;
             }
         }
 
         void StopRecording(int channelIndex)
         {
+            //Detach ourselves from the sample read event queue
+            if(IsRecordingCh1)
+                HardwareManager.DaqBoard.ReadDone -= RecordSamples;
             if (channelIndex == 1)
             {
                 IsRecordingCh1 = false;
+                _ch1File.Close();
+                _ch1File = null;
             }
         }
 
@@ -487,10 +502,35 @@ namespace PatchCommander.ViewModels
             if (channelIndex == 1)
             {
                 DateTime now = DateTime.Now;
-                return string.Format("{0}_{1}_{2}_{3}_{4}", BaseFNameCh1, now.Year, now.Month, now.Day, now.Ticks);
+                string folder = string.Format("F:\\PatchCommander_Data\\{0}_{1}_{2}", now.Year, now.Month, now.Day);
+                Directory.CreateDirectory(folder);
+                return string.Format("{0}\\Ch1_{1}_{2}_{3}_{4}_{5}", folder, BaseFNameCh1, now.Year, now.Month, now.Day, now.Ticks);
             }
             else
                 throw new NotImplementedException("Channel 2 not currently implemented");
+        }
+
+        void WriteChannel1Sample(long index, double mode, double command, double read, double laser)
+        {
+            if (!IsRecordingCh1 || _ch1File==null)
+                return;
+            _ch1File.Write(index);
+            _ch1File.Write((float)mode);
+            _ch1File.Write((float)command);
+            _ch1File.Write((float)read);
+            _ch1File.Write((float)laser);
+        }
+
+        #endregion
+
+        #region EventHandlers
+
+        void RecordSamples(ReadDoneEventArgs args)
+        {
+            for(int i = 0; i < args.Data.GetLength(1); i++)
+            {
+                WriteChannel1Sample(args.StartIndex + i, args.Data[2, i], args.Data[4, i], args.Data[0, i], args.Data[0, 6]);
+            }
         }
 
         #endregion
@@ -514,6 +554,10 @@ namespace PatchCommander.ViewModels
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            if (IsRecordingCh1)
+                StopRecording(1);
+            if (IsAcquiring)
+                StopAcquisition();
             if (HardwareManager.DaqBoard.IsRunning)
                 StopAcquisition();
         }
