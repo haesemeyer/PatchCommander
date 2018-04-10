@@ -235,6 +235,11 @@ namespace PatchCommander.Hardware
             Task readTask = new Task("EphysRead");
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1Read, "Electrode1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2Read, "Electrode2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
+            readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1ModeRead, "Mode1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
+            readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2ModeRead, "Mode2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
+            readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1CommandRead, "Command1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
+            readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2CommandRead, "Command2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
+            readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.LaserRead, "LaserRead", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.Timing.ConfigureSampleClock("", HardwareSettings.DAQ.Rate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
             long sampleIndex = 0;
             _writeThreadReady.WaitOne();
