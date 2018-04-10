@@ -14,7 +14,17 @@ namespace PatchCommander.Hardware
 
             public const string Ch1Read = "ai0";
 
+            public const string Ch1CommandRead = "ai4";
+
+            public const string Ch1ModeRead = "ai2";
+
             public const string Ch2Read = "ai1";
+
+            public const string Ch2CommandRead = "ai5";
+
+            public const string Ch2ModeRead = "ai3";
+
+            public const string LaserRead = "ai16";
 
             public const int Rate = 50000;
 
