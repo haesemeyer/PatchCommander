@@ -32,6 +32,16 @@ namespace PatchCommander.ViewModels
         }
     }
 
+    /// <summary>
+    /// Represents a data chunk for one channel
+    /// </summary>
+    struct ChannelReadDataChunk
+    {
+        public long StartIndex;
+
+        public double[,] Data;
+    }
+
     class MainViewModel : ViewModelBase
     {
         #region Members
@@ -74,11 +84,6 @@ namespace PatchCommander.ViewModels
         bool _isRecordingCh1;
 
         /// <summary>
-        /// The file that is currently being recorded to in Ch1
-        /// </summary>
-        BinaryWriter _ch1File;
-
-        /// <summary>
         /// The base filename for channel 1
         /// </summary>
         string _baseFNameCh1;
@@ -103,6 +108,11 @@ namespace PatchCommander.ViewModels
         /// </summary>
         double _injectionCurrentCh1;
 
+        /// <summary>
+        /// When recording, receives copy of the read data for asynchronous disk writing
+        /// </summary>
+        ProducerConsumer<ChannelReadDataChunk> _record_dataQueue;
+
         #endregion
 
         public MainViewModel()
@@ -110,6 +120,7 @@ namespace PatchCommander.ViewModels
             BaseFNameCh1 = "Fish_01";
             if (IsInDesignMode)
                 return;
+            _record_dataQueue = new ProducerConsumer<ChannelReadDataChunk>(HardwareSettings.DAQ.Rate);
             //Subscribe to channel view events
             ChannelViewModel.ClampModeChanged += ClampModeChanged;
             ChannelViewModel.SealTestChanged += SealTestChanged;
@@ -455,21 +466,42 @@ namespace PatchCommander.ViewModels
                 HardwareManager.DaqBoard.ReadDone += RecordSamples;
             if (channelIndex == 1)
             {
-                _ch1File = new BinaryWriter(File.OpenWrite(CreateFilename(1)+".data"));
+                Task writeTask = new Task(() =>
+               {
+                   BinaryWriter ch1File = new BinaryWriter(File.OpenWrite(CreateFilename(1) + ".data"));
+                   while (true)
+                   {
+                       ChannelReadDataChunk chnk = _record_dataQueue.Consume();
+                       if (chnk.StartIndex == 0 && chnk.Data == null)
+                           break;
+                       for (int i = 0; i < chnk.Data.GetLength(1); i++)
+                           WriteChannel1Sample(ch1File, chnk.StartIndex + i, chnk.Data[2, i] > 2, (float)chnk.Data[4, i], (float)chnk.Data[0, i],
+                               (float)chnk.Data[6, i]);
+                   }
+                   ch1File.Dispose();
+               });
+                writeTask.Start();
                 IsRecordingCh1 = true;
             }
+            else
+                throw new NotImplementedException();
         }
 
         void StopRecording(int channelIndex)
         {
             //Detach ourselves from the sample read event queue
-            if(IsRecordingCh1)
+            if (IsRecordingCh1)
+            {
                 HardwareManager.DaqBoard.ReadDone -= RecordSamples;
+                //add end of recording to signal to our queue
+                ChannelReadDataChunk end_chunk = new ChannelReadDataChunk();
+                end_chunk.StartIndex = 0;
+                end_chunk.Data = null;
+                _record_dataQueue.Produce(end_chunk);
+            }
             if (channelIndex == 1)
             {
                 IsRecordingCh1 = false;
-                _ch1File.Close();
-                _ch1File = null;
             }
         }
 
@@ -515,15 +547,22 @@ namespace PatchCommander.ViewModels
                 throw new NotImplementedException("Channel 2 not currently implemented");
         }
 
-        void WriteChannel1Sample(long index, double mode, double command, double read, double laser)
+        void WriteChannel1Sample(BinaryWriter file, long index, bool mode, float command, float read, float laser)
         {
-            if (!IsRecordingCh1 || _ch1File==null)
+            if (file==null)
                 return;
-            _ch1File.Write(index);
-            _ch1File.Write((float)mode);
-            _ch1File.Write((float)command);
-            _ch1File.Write((float)read);
-            _ch1File.Write((float)laser);
+            try
+            {
+                file.Write(index);
+                file.Write(mode);
+                file.Write(command);
+                file.Write(read);
+                file.Write(laser);
+            }
+            catch (IOException)
+            {
+                System.Diagnostics.Debug.WriteLine("Error writing to data file. File may be corrupted.");
+            }
         }
 
         #endregion
@@ -532,10 +571,10 @@ namespace PatchCommander.ViewModels
 
         void RecordSamples(ReadDoneEventArgs args)
         {
-            for(int i = 0; i < args.Data.GetLength(1); i++)
-            {
-                WriteChannel1Sample(args.StartIndex + i, args.Data[2, i], args.Data[4, i], args.Data[0, i], args.Data[0, 6]);
-            }
+            ChannelReadDataChunk chunk = new ChannelReadDataChunk();
+            chunk.StartIndex = args.StartIndex;
+            chunk.Data = args.Data.Clone() as double[,];
+            _record_dataQueue.Produce(chunk);
         }
 
         #endregion
