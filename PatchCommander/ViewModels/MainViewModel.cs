@@ -549,6 +549,8 @@ namespace PatchCommander.ViewModels
 
         void WriteChannel1Sample(BinaryWriter file, long index, bool mode, float command, float read, float laser)
         {
+            //To read in python, use numpy.fromfile with the following data-type definition
+            //dt = numpy.dtype([('index',np.int64),('mode',np.bool),('command',np.float32),('read',np.float32),('laser',np.float32)])
             if (file==null)
                 return;
             try
