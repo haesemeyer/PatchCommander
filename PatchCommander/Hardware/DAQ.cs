@@ -88,7 +88,7 @@ namespace PatchCommander.Hardware
         /// <summary>
         /// The write thread for writing analog out samples
         /// </summary>
-        WorkerT<Func<double, int, double[,]>> _writeThread;
+        WorkerT<Func<long, int, double[,]>> _writeThread;
 
         /// <summary>
         /// Indicates whether we are currently acquiring/generating data
@@ -267,7 +267,7 @@ namespace PatchCommander.Hardware
             }
         }
 
-        void WriteThreadRun(AutoResetEvent stop, Func<double, int, double[,]> sampleFunction)
+        void WriteThreadRun(AutoResetEvent stop, Func<long, int, double[,]> sampleFunction)
         {
             Task writeTask = new Task("EphysWrite");
             double[,] firstSamples = sampleFunction(0, HardwareSettings.DAQ.Rate);
@@ -283,13 +283,13 @@ namespace PatchCommander.Hardware
             dataWriter.WriteMultiSample(false, firstSamples);
             writeTask.Start();
             _writeThreadReady.Set();
-            double second = 0;
+            long start_sample = 0;
             try
             {
-                while (!stop.WaitOne(100))
+                while (!stop.WaitOne(50))
                 {
-                    double[,] samples = sampleFunction(++second, HardwareSettings.DAQ.Rate);
-                    System.Diagnostics.Debug.Assert(samples.GetLength(1) == HardwareSettings.DAQ.Rate);
+                    start_sample += HardwareSettings.DAQ.Rate / 5;
+                    double[,] samples = sampleFunction(start_sample, HardwareSettings.DAQ.Rate / 5);
                     dataWriter.WriteMultiSample(false, samples);
                 }
                 System.Diagnostics.Debug.WriteLine("Left write loop");
@@ -304,7 +304,7 @@ namespace PatchCommander.Hardware
         /// <summary>
         /// Starts acquisition and generation
         /// </summary>
-        public void Start(Func<double, int, double[,]> sampleFunction = null)
+        public void Start(Func<long, int, double[,]> sampleFunction = null)
         {
             if (IsRunning)
             {
@@ -314,7 +314,7 @@ namespace PatchCommander.Hardware
             _readThread = new WorkerT<object>(ReadThreadRun, null, true, 3000);
             if (sampleFunction != null)
             {
-                _writeThread = new WorkerT<Func<double, int, double[,]>>(WriteThreadRun, sampleFunction, true, 3000);
+                _writeThread = new WorkerT<Func<long, int, double[,]>>(WriteThreadRun, sampleFunction, true, 3000);
             }
             else
                 _writeThreadReady.Set();

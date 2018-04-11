@@ -318,10 +318,10 @@ namespace PatchCommander.ViewModels
         /// <summary>
         /// Generates necessary analog out samples
         /// </summary>
-        /// <param name="second">The current second since start</param>
+        /// <param name="start_sample">The index of the first sample</param>
         /// <param name="nSamples">The number of samples to generate</param>
         /// <returns>For each analog out the appropriate voltage samples</returns>
-        private double[,] genSamples(double second, int nSamples)
+        private double[,] genSamples(long start_sample, int nSamples)
         {
             double[,] samples = new double[2, nSamples];
             // Channel 1
@@ -340,7 +340,7 @@ namespace PatchCommander.ViewModels
             }
             if (SealTest_Channel1 && VC_Channel1)
             {
-                var sts = sealTestSamples(second, nSamples);
+                var sts = sealTestSamples(start_sample, nSamples);
                 for (int i = 0; i < nSamples; i++)
                     samples[0, i] = sts[i] + offset;
             }
@@ -354,7 +354,7 @@ namespace PatchCommander.ViewModels
             // Channel 2
             if (SealTest_Channel2 && VC_Channel2)
             {
-                var sts = sealTestSamples(second, nSamples);
+                var sts = sealTestSamples(start_sample, nSamples);
                 for (int i = 0; i < nSamples; i++)
                     samples[1, i] = sts[i];
             }
@@ -393,24 +393,24 @@ namespace PatchCommander.ViewModels
         /// <summary>
         /// For one electrode generates our seal test samples for one whole second
         /// </summary>
-        /// <param name="second">The starting second</param>
-        /// <param name="nSamples">The number of samples to generate equaling one second</param>
+        /// <param name="start_sampe">The index of the first sample</param>
+        /// <param name="nSamples">The number of samples to generate</param>
         /// <param name="freqHz">The frequency in Hz at which to generate sealTestSamples</param>
         /// <param name="ampMV">The amplitude in mV</param>
         /// <returns></returns>
-        private double[] sealTestSamples(double second, int nSamples, int freqHz=10, double ampMV=10)
+        private double[] sealTestSamples(long start_sample, int nSamples, int freqHz=10, double ampMV=10)
         {
-            if (_stSamples == null || _stSamples.Length != nSamples)
+            if (_stSamples == null || _stSamples.Length != HardwareSettings.DAQ.Rate)
             {
                 //Generate our sample buffer
-                _stSamples = new double[nSamples];
-                if(nSamples % (freqHz*2) != 0)
+                _stSamples = new double[HardwareSettings.DAQ.Rate];
+                if(HardwareSettings.DAQ.Rate % (freqHz*2) != 0)
                 {
                     System.Diagnostics.Debug.WriteLine("Warning seal test frequency does not result in even samples.");
                 }
-                int sam_per_seal = nSamples / freqHz;
+                int sam_per_seal = HardwareSettings.DAQ.Rate / freqHz;
                 int sam_on = sam_per_seal / 2;
-                for(int i = 0; i<nSamples; i++)
+                for(int i = 0; i<_stSamples.Length; i++)
                 {
                     if (i % sam_per_seal < sam_on)
                         _stSamples[i] = milliVoltsToAOVolts(ampMV);
@@ -418,7 +418,12 @@ namespace PatchCommander.ViewModels
                         _stSamples[i] = 0;
                 }
             }
-            return _stSamples;
+            double[] samOut = new double[nSamples];
+            for(int i = 0;i < nSamples; i++)
+            {
+                Array.Copy(_stSamples, start_sample % HardwareSettings.DAQ.Rate, samOut, 0, samOut.Length); 
+            }
+            return samOut;
         }
 
         void StartAcquisition()
