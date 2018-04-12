@@ -224,7 +224,15 @@ namespace PatchCommander.Hardware
 
         public delegate void ReadDoneEvent(ReadDoneEventArgs args);
 
+        /// <summary>
+        /// Event that signals that a new data package was read off the board
+        /// </summary>
         public event ReadDoneEvent ReadDone;
+
+        /// <summary>
+        /// Event that signals that the read thread has finished
+        /// </summary>
+        public event Action ReadThreadFinished;
 
         #endregion
 
@@ -267,6 +275,9 @@ namespace PatchCommander.Hardware
             {
                 readTask.Stop();
                 readTask.Dispose();
+                //Signal to subscribers that we exited
+                if (ReadThreadFinished != null)
+                    ReadThreadFinished.Invoke();
             }
         }
 
@@ -346,6 +357,13 @@ namespace PatchCommander.Hardware
                 _readThread.Dispose();
                 _readThread = null;
             }
+            //Reset all writes to 0
+            Task resetTask = new Task("ChReset");
+            for (int i = 0; i < 3; i++)
+                resetTask.AOChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + string.Format("AO{0}", i), "", -10, 10, AOVoltageUnits.Volts);
+            AnalogMultiChannelWriter resetWriter = new AnalogMultiChannelWriter(resetTask.Stream);
+            resetWriter.WriteSingleSample(true, new double[3]);
+            resetTask.Dispose();
             IsRunning = false;
         }
         #endregion
