@@ -83,7 +83,7 @@ namespace PatchCommander.Hardware
         /// <summary>
         /// The read thread reading from analog in channels
         /// </summary>
-        WorkerT<object> _readThread;
+        WorkerT<long> _readThread;
 
         /// <summary>
         /// The write thread for writing analog out samples
@@ -230,8 +230,11 @@ namespace PatchCommander.Hardware
 
         #region Methods
 
-        void ReadThreadRun(AutoResetEvent stop, object data)
+        void ReadThreadRun(AutoResetEvent stop, long maxRead)
         {
+            //maxRead < 0 indicates "unlimited" reads
+            if (maxRead < 0)
+                maxRead = long.MaxValue;
             Task readTask = new Task("EphysRead");
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch1Read, "Electrode1", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
             readTask.AIChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + HardwareSettings.DAQ.Ch2Read, "Electrode2", AITerminalConfiguration.Differential, -10, 10, AIVoltageUnits.Volts);
@@ -247,7 +250,7 @@ namespace PatchCommander.Hardware
             {
                 readTask.Start();
                 AnalogMultiChannelReader dataReader = new AnalogMultiChannelReader(readTask.Stream);
-                while (!stop.WaitOne(0))
+                while (!stop.WaitOne(0) && sampleIndex < maxRead)
                 {
                     var nsamples = readTask.Stream.AvailableSamplesPerChannel;
                     if (nsamples >= 10)
@@ -306,14 +309,14 @@ namespace PatchCommander.Hardware
         /// <summary>
         /// Starts acquisition and generation
         /// </summary>
-        public void Start(Func<long, int, double[,]> sampleFunction = null)
+        public void Start(Func<long, int, double[,]> sampleFunction = null, long maxSamplesRead = -1)
         {
             if (IsRunning)
             {
                 System.Diagnostics.Debug.WriteLine("Tried to start acquisition while running");
                 return;
             }
-            _readThread = new WorkerT<object>(ReadThreadRun, null, true, 3000);
+            _readThread = new WorkerT<long>(ReadThreadRun, maxSamplesRead, true, 3000);
             if (sampleFunction != null)
             {
                 _writeThread = new WorkerT<Func<long, int, double[,]>>(WriteThreadRun, sampleFunction, true, 3000);
