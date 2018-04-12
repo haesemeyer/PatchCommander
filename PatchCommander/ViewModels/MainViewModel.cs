@@ -109,6 +109,11 @@ namespace PatchCommander.ViewModels
         double _injectionCurrentCh1;
 
         /// <summary>
+        /// Task to write data to file
+        /// </summary>
+        Task _recordTask;
+
+        /// <summary>
         /// When recording, receives copy of the read data for asynchronous disk writing
         /// </summary>
         ProducerConsumer<ChannelReadDataChunk> _record_dataQueue;
@@ -466,7 +471,7 @@ namespace PatchCommander.ViewModels
                 HardwareManager.DaqBoard.ReadDone += RecordSamples;
             if (channelIndex == 1)
             {
-                Task writeTask = new Task(() =>
+                _recordTask = new Task(() =>
                {
                    BinaryWriter ch1File = new BinaryWriter(File.OpenWrite(CreateFilename(1) + ".data"));
                    while (true)
@@ -480,7 +485,7 @@ namespace PatchCommander.ViewModels
                    }
                    ch1File.Dispose();
                });
-                writeTask.Start();
+                _recordTask.Start();
                 IsRecordingCh1 = true;
             }
             else
@@ -498,6 +503,11 @@ namespace PatchCommander.ViewModels
                 end_chunk.StartIndex = 0;
                 end_chunk.Data = null;
                 _record_dataQueue.Produce(end_chunk);
+                //wait for our file writing to finish
+                if (_recordTask != null && !_recordTask.IsCompleted)
+                    if (!_recordTask.Wait(1000))
+                        System.Diagnostics.Debug.WriteLine("Timed out waiting on record task to end");
+                _recordTask = null;
             }
             if (channelIndex == 1)
             {
