@@ -276,8 +276,9 @@ namespace PatchCommander.Hardware
                 readTask.Stop();
                 readTask.Dispose();
                 //Signal to subscribers that we exited
+                //Note: Has to be asynchronous so that we leave here before stop gets called
                 if (ReadThreadFinished != null)
-                    ReadThreadFinished.Invoke();
+                    ReadThreadFinished.BeginInvoke(null, null);
             }
         }
 
@@ -290,7 +291,9 @@ namespace PatchCommander.Hardware
             var nChannels = firstSamples.GetLength(0);
             for (int i = 0; i < nChannels; i++)
                 writeTask.AOChannels.CreateVoltageChannel(HardwareSettings.DAQ.DeviceName + "/" + string.Format("AO{0}", i), "", -10, 10, AOVoltageUnits.Volts);
-            writeTask.Timing.ConfigureSampleClock("ai/SampleClock", HardwareSettings.DAQ.Rate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            //Note: Can't use ai clock, since we cannot guarantee that the read thread ai task finishes *after* the write task
+            //otherwise Task.Stop will block indefinitely...
+            writeTask.Timing.ConfigureSampleClock("", HardwareSettings.DAQ.Rate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
             writeTask.Triggers.StartTrigger.ConfigureDigitalEdgeTrigger("ai/StartTrigger ", DigitalEdgeStartTriggerEdge.Rising);
             writeTask.Stream.WriteRegenerationMode = WriteRegenerationMode.DoNotAllowRegeneration;
             AnalogMultiChannelWriter dataWriter = new AnalogMultiChannelWriter(writeTask.Stream);
