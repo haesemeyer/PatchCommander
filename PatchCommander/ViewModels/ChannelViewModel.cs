@@ -47,6 +47,11 @@ namespace PatchCommander.ViewModels
         #region Members
 
         /// <summary>
+        /// Our 0-based channel index
+        /// </summary>
+        int _channelIndex;
+
+        /// <summary>
         /// Collection of values to plot on the live plot
         /// </summary>
         ChartCollection<double> _plotData_live;
@@ -316,7 +321,19 @@ namespace PatchCommander.ViewModels
             }
         }
 
-        public int ChannelIndex { get; set; }
+        public int ChannelIndex
+        {
+            get
+            {
+                return _channelIndex;
+            }
+            set
+            {
+                _channelIndex = value;
+                //Add ourselves to our hacky dictionary for outside manipulation...
+                ChannelVMDict[value] = this;
+            }
+        }
 
         #endregion
 
@@ -467,6 +484,8 @@ namespace PatchCommander.ViewModels
         public static event Action<SealTestChangedArgs> SealTestChanged;
 
         #endregion
+
+        public static Dictionary<int, ChannelViewModel> ChannelVMDict = new Dictionary<int, ChannelViewModel>();
 
         protected override void Dispose(bool disposing)
         {
