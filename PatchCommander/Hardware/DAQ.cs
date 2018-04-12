@@ -289,6 +289,8 @@ namespace PatchCommander.Hardware
                 while (!stop.WaitOne(50))
                 {                    
                     double[,] samples = sampleFunction(start_sample, HardwareSettings.DAQ.Rate / 5);
+                    if (samples == null)
+                        break;
                     dataWriter.WriteMultiSample(false, samples);
                     start_sample += HardwareSettings.DAQ.Rate / 5;
                 }
