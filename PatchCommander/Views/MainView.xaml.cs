@@ -29,6 +29,11 @@ namespace PatchCommander.Views
             _viewModel.StartStopRecCh1();
         }
 
+        private void btnCh1CurrSteps_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.RunCurrentStepsCh1();
+        }
+
         protected override void WindowClosing(object sender, CancelEventArgs e)
         {
             //Clean up when the window closes
@@ -36,6 +41,9 @@ namespace PatchCommander.Views
             base.WindowClosing(sender, e);
         }
 
+        private void btnCh1(object sender, RoutedEventArgs e)
+        {
 
+        }
     }
 }

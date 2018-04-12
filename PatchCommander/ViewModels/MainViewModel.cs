@@ -114,9 +114,39 @@ namespace PatchCommander.ViewModels
         Task _recordTask;
 
         /// <summary>
+        /// Indicates that a stimulation experiment is currently running
+        /// </summary>
+        bool _stimExpRunning;
+
+        /// <summary>
         /// When recording, receives copy of the read data for asynchronous disk writing
         /// </summary>
         ProducerConsumer<ChannelReadDataChunk> _record_dataQueue;
+
+        /// <summary>
+        /// The number of milliseconds in the current step pre-phase
+        /// </summary>
+        uint _currStep_prePostMs;
+
+        /// <summary>
+        /// The number of milliseconds in each current step
+        /// </summary>
+        uint _currStep_stimMs;
+
+        /// <summary>
+        /// The number of current steps to perform
+        /// </summary>
+        uint _n_currSteps;
+
+        /// <summary>
+        /// The pico-amps of the first current step
+        /// </summary>
+        double _currStep_fistPico;
+
+        /// <summary>
+        /// The pico-amps of the last current step
+        /// </summary>
+        double _currStep_lastPico;
 
         #endregion
 
@@ -129,9 +159,108 @@ namespace PatchCommander.ViewModels
             //Subscribe to channel view events
             ChannelViewModel.ClampModeChanged += ClampModeChanged;
             ChannelViewModel.SealTestChanged += SealTestChanged;
+            //Set defaults for current stimulation
+            NCurrSteps = 5;
+            CurrStep_PrePostMs = 1000;
+            CurrStep_StimMs = 10000;
+            CurrStep_FirstPico = 0;
+            CurrStep_LastPico = 100;
         }
 
         #region Properties
+
+        /// <summary>
+        /// The pico-amps of the first current step
+        /// </summary>
+        public double CurrStep_FirstPico
+        {
+            get
+            {
+                return _currStep_fistPico;
+            }
+            set
+            {
+                _currStep_fistPico = value;
+                RaisePropertyChanged(nameof(CurrStep_FirstPico));
+            }
+        }
+
+        /// <summary>
+        /// The pico-amps of the last current step
+        /// </summary>
+        public double CurrStep_LastPico
+        {
+            get
+            {
+                return _currStep_lastPico;
+            }
+            set
+            {
+                _currStep_lastPico = value;
+                RaisePropertyChanged(nameof(CurrStep_LastPico));
+            }
+        }
+
+        /// <summary>
+        /// The number of milliseconds in the current step pre-phase
+        /// </summary>
+        public uint CurrStep_PrePostMs
+        {
+            get
+            {
+                return _currStep_prePostMs;
+            }
+            set
+            {
+                _currStep_prePostMs = value;
+                RaisePropertyChanged(nameof(CurrStep_PrePostMs));
+            }
+        }
+
+        /// <summary>
+        /// The number of milliseconds in each current step
+        /// </summary>
+        public uint CurrStep_StimMs
+        {
+            get
+            {
+                return _currStep_stimMs;
+            }
+            set
+            {
+                _currStep_stimMs = value;
+                RaisePropertyChanged(nameof(CurrStep_StimMs));
+            }
+        }
+
+        /// <summary>
+        /// The number of current steps to perform
+        /// </summary>
+        public uint NCurrSteps
+        {
+            get
+            {
+                return _n_currSteps;
+            }
+            set
+            {
+                _n_currSteps = value;
+                RaisePropertyChanged(nameof(NCurrSteps));
+            }
+        }
+
+        public bool StimExpRunning
+        {
+            get
+            {
+                return _stimExpRunning;
+            }
+            set
+            {
+                _stimExpRunning = value;
+                RaisePropertyChanged(nameof(StimExpRunning));
+            }
+        }
 
         /// <summary>
         /// Indicates if channel1 is in voltage clamp
@@ -329,6 +458,27 @@ namespace PatchCommander.ViewModels
             else
                 StartRecording(1);
         }
+
+        public void RunCurrentStepsCh1()
+        {
+            StimExpRunning = true;
+            //Stop any currently ongoing acquisition to launch fixed program
+            if (HardwareManager.DaqBoard.IsRunning)
+                StopAcquisition();
+            //Change mode to current clamp
+            VC_Channel1 = false;
+            ChannelViewModel.ChannelVMDict[0].VC = false;
+            //Subscribe to read finished signal
+            HardwareManager.DaqBoard.ReadThreadFinished += DaqBoard_ReadThreadFinished;
+            //Get everything ready to record
+            StartRecording(1);
+            //Notify and launch the board
+            if (Start != null)
+                Start.Invoke();
+            long totalSamples = (NCurrSteps) * (CurrStep_StimMs + 2 * CurrStep_PrePostMs) * HardwareSettings.DAQ.Rate / 1000;
+            HardwareManager.DaqBoard.Start((s, i) => { return genCurrentSteps(s, i, 1); }, totalSamples);
+        }
+
         #endregion Button Handlers
 
         /// <summary>
@@ -379,6 +529,36 @@ namespace PatchCommander.ViewModels
                 for (int i = 0; i < nSamples; i++)
                 {
                     samples[1, i] = 0;
+                }
+            }
+            return samples;
+        }
+
+        /// <summary>
+        /// Generates  analog out samples for current step presentation
+        /// </summary>
+        /// <param name="start_sample">The index of the first sample</param>
+        /// <param name="nSamples">The number of samples to generate</param>
+        /// <param name="channelIndex">The channel on which to generate samples</param>
+        /// <returns>For each analog out the appropriate voltage samples</returns>
+        private double[,] genCurrentSteps(long start_sample, int nSamples, int channelIndex)
+        {
+            long pre_post_samples = CurrStep_PrePostMs * HardwareSettings.DAQ.Rate / 1000;
+            long stim_samples = CurrStep_StimMs * HardwareSettings.DAQ.Rate / 1000;
+            long step_samples = stim_samples + 2 * pre_post_samples;
+            double[,] samples = new double[2, nSamples];
+            for(int i = 0; i<nSamples; i++)
+            {
+                long curr_sample = start_sample + i;
+                long curr_step = curr_sample / step_samples;
+                //If we are beyond the last step, or in the pre-phase, or in the post-phase set current to 0
+                if (curr_step >= NCurrSteps || curr_sample % step_samples < pre_post_samples || curr_sample % step_samples > pre_post_samples+stim_samples)
+                    samples[channelIndex - 1, i] = 0;
+                else
+                {
+                    //Determine step-current: Note, we wan the first current to be exactly the user set value and the last current as well
+                    double current = (CurrStep_LastPico - CurrStep_FirstPico) / (NCurrSteps-1) * curr_step + CurrStep_FirstPico;
+                    samples[channelIndex - 1, i] = picoAmpsToAOVolts(current);
                 }
             }
             return samples;
@@ -516,30 +696,6 @@ namespace PatchCommander.ViewModels
         }
 
         /// <summary>
-        /// Gets called whenver the clamp mode changes on a channel view
-        /// </summary>
-        /// <param name="args"></param>
-        void ClampModeChanged(ClampModeChangedArgs args)
-        {
-            if (args.ChannelIndex == 0)
-                VC_Channel1 = (args.Mode == DAQ.ClampMode.VoltageClamp);
-            else if (args.ChannelIndex == 1)
-                VC_Channel2 = (args.Mode == DAQ.ClampMode.VoltageClamp);
-        }
-
-        /// <summary>
-        /// Gets called whenver the seal test mode changed on a channel view
-        /// </summary>
-        /// <param name="args"></param>
-        void SealTestChanged(SealTestChangedArgs args)
-        {
-            if (args.ChannelIndex == 0)
-                SealTest_Channel1 = args.SealTest;
-            else if (args.ChannelIndex == 1)
-                SealTest_Channel2 = args.SealTest;
-        }
-
-        /// <summary>
         /// Creates a unique recording filename
         /// </summary>
         /// <param name="channelIndex">The index of the channel for which the filename should be created</param>
@@ -581,12 +737,52 @@ namespace PatchCommander.ViewModels
 
         #region EventHandlers
 
+        /// <summary>
+        /// Event to receive and distribute analog in samples received
+        /// </summary>
+        /// <param name="args">Sample payload</param>
         void RecordSamples(ReadDoneEventArgs args)
         {
             ChannelReadDataChunk chunk = new ChannelReadDataChunk();
             chunk.StartIndex = args.StartIndex;
             chunk.Data = args.Data.Clone() as double[,];
             _record_dataQueue.Produce(chunk);
+        }
+
+        /// <summary>
+        /// During fixed length experiments allows us to "clean up" after reading is finished
+        /// </summary>
+        private void DaqBoard_ReadThreadFinished()
+        {
+            //Unsubscribe ourselves
+            HardwareManager.DaqBoard.ReadThreadFinished -= DaqBoard_ReadThreadFinished;
+            //Stop recording and acquisition
+            StopAcquisition();
+            StimExpRunning = false;
+        }
+
+        /// <summary>
+        /// Gets called whenver the clamp mode changes on a channel view
+        /// </summary>
+        /// <param name="args"></param>
+        void ClampModeChanged(ClampModeChangedArgs args)
+        {
+            if (args.ChannelIndex == 0)
+                VC_Channel1 = (args.Mode == DAQ.ClampMode.VoltageClamp);
+            else if (args.ChannelIndex == 1)
+                VC_Channel2 = (args.Mode == DAQ.ClampMode.VoltageClamp);
+        }
+
+        /// <summary>
+        /// Gets called whenver the seal test mode changed on a channel view
+        /// </summary>
+        /// <param name="args"></param>
+        void SealTestChanged(SealTestChangedArgs args)
+        {
+            if (args.ChannelIndex == 0)
+                SealTest_Channel1 = args.SealTest;
+            else if (args.ChannelIndex == 1)
+                SealTest_Channel2 = args.SealTest;
         }
 
         #endregion

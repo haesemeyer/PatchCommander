@@ -29,7 +29,7 @@
                 <ColumnDefinition Width="303*"/>
             </Grid.ColumnDefinitions>
             <Grid d:LayoutOverrides="LeftMargin, RightMargin, TopMargin, BottomMargin">
-                <Button x:Name="button" Content="{Binding IsAcquiring, Converter={StaticResource BoolAcquiringConverter}}"  VerticalAlignment="Bottom" Click="btnStartStop_Click" Margin="77,0,76,10"/>
+                <Button x:Name="button" Content="{Binding IsAcquiring, Converter={StaticResource BoolAcquiringConverter}}"  VerticalAlignment="Bottom" Click="btnStartStop_Click" Margin="77,0,76,10" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}"/>
             </Grid>
             <Grid Grid.Column="1" d:LayoutOverrides="LeftMargin, RightMargin, TopMargin, BottomMargin">
                 <TabControl x:Name="tabControl">
@@ -51,6 +51,35 @@
                                     <ni:GeneralValueFormatter Format="{}{0} pA" ShortFormat="{x:Null}"/>
                                 </ni:NumericTextBoxDouble.ValueFormatter>
                             </ni:NumericTextBoxDouble>
+                            <Rectangle Margin="151.099,8.293,323.619,36.666" Stroke="Black"/>
+                            <Label x:Name="label1" Content="Current steps" HorizontalAlignment="Left" Margin="151.099,8.293,0,0" VerticalAlignment="Top" FontWeight="Bold"/>
+                            <Button x:Name="btnCStepCh1" HorizontalAlignment="Left" Margin="239,0,0,39.666" VerticalAlignment="Bottom" Width="60.333" Click="btnCh1CurrSteps_Click" Content="Run" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="158.6,53.02,0,113.937" Width="72.499" Range="0, 30000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding CurrStep_PrePostMs}" d:LayoutOverrides="HorizontalAlignment" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" Interval="5">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} ms" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2" Content="Pre/post time" HorizontalAlignment="Left" Margin="152.099,29.253,0,0" VerticalAlignment="Top"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="158.6,102.02,0,64.937" Width="72.499" Range="0, 30000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding CurrStep_StimMs}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" d:LayoutOverrides="HorizontalAlignment" Interval="50">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} ms" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2_Copy" Content="Step length" HorizontalAlignment="Left" Margin="152.099,78.253,0,81.038" d:LayoutOverrides="Height"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="242.6,53.02,0,113.937" Width="62" Range="-1000, 1000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding CurrStep_FirstPico}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" Interval="5" d:LayoutOverrides="HorizontalAlignment">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} pA" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2_Copy1" Content="First step" HorizontalAlignment="Left" Margin="236.099,29.253,0,0" VerticalAlignment="Top"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="242.6,102.02,0,64.937" Width="62" Range="-1000, 1000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding CurrStep_LastPico}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" Interval="5" d:LayoutOverrides="HorizontalAlignment">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} pA" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2_Copy2" Content="Last step" HorizontalAlignment="Left" Margin="236.099,78.253,0,81.038" d:LayoutOverrides="Height"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="319.6,53.02,0,113.937" Width="62" Range="2, 20, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding NCurrSteps}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}"/>
+                            <Label x:Name="label2_Copy3" Content="N Steps" Margin="313.099,29.253,341.742,0" VerticalAlignment="Top" d:LayoutOverrides="Width"/>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Channel 2">
