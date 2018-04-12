@@ -283,14 +283,14 @@ namespace PatchCommander.Hardware
             dataWriter.WriteMultiSample(false, firstSamples);
             writeTask.Start();
             _writeThreadReady.Set();
-            long start_sample = 0;
+            long start_sample = HardwareSettings.DAQ.Rate;
             try
             {
                 while (!stop.WaitOne(50))
-                {
-                    start_sample += HardwareSettings.DAQ.Rate / 5;
+                {                    
                     double[,] samples = sampleFunction(start_sample, HardwareSettings.DAQ.Rate / 5);
                     dataWriter.WriteMultiSample(false, samples);
+                    start_sample += HardwareSettings.DAQ.Rate / 5;
                 }
                 System.Diagnostics.Debug.WriteLine("Left write loop");
             }
