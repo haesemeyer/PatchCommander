@@ -148,6 +148,38 @@ namespace PatchCommander.ViewModels
         /// </summary>
         double _currStep_lastPico;
 
+        /// <summary>
+        /// The number of seconds in the laser stimulus pre and post phases
+        /// </summary>
+        uint _laserStim_prePostS;
+
+        /// <summary>
+        /// The number of seconds the laser stimulus should last
+        /// </summary>
+        uint _laserStim_stimS;
+
+        /// <summary>
+        /// The amplitude of the laser stimulus in mA
+        /// </summary>
+        double _laserStim_mA;
+
+        /// <summary>
+        /// The number of laser stimulus presentations to run
+        /// </summary>
+        uint _n_laserSteps;
+
+        /// <summary>
+        /// If true, laser steps will be presented in
+        /// voltage clamp mode
+        /// </summary>
+        bool _laser_holdV;
+
+        /// <summary>
+        /// When holding the holding voltage to use during
+        /// laser stimulation
+        /// </summary>
+        double _laser_holding_mV;
+
         #endregion
 
         public MainViewModel()
@@ -165,9 +197,113 @@ namespace PatchCommander.ViewModels
             CurrStep_StimMs = 10000;
             CurrStep_FirstPico = 0;
             CurrStep_LastPico = 100;
+            NLaserSteps = 5;
+            LaserHoldV = false;
+            LaserHoldingmV = -40;
+            LaserStim_mA = 2000;
+            LaserStim_StimS = 20;
+            LaserStim_PrePostS = 10;
         }
 
         #region Properties
+
+        /// <summary>
+        /// When holding the holding voltage to use during
+        /// laser stimulation
+        /// </summary>
+        public double LaserHoldingmV
+        {
+            get
+            {
+                return _laser_holding_mV;
+            }
+            set
+            {
+                _laser_holding_mV = value;
+                RaisePropertyChanged(nameof(LaserHoldingmV));
+            }
+        }
+
+        /// <summary>
+        /// If true, laser steps will be presented in
+        /// voltage clamp mode
+        /// </summary>
+        public bool LaserHoldV
+        {
+            get
+            {
+                return _laser_holdV;
+            }
+            set
+            {
+                _laser_holdV = value;
+                RaisePropertyChanged(nameof(LaserHoldV));
+            }
+        }
+
+        /// <summary>
+        /// The number of laser stimulus presentations to run
+        /// </summary>
+        public uint NLaserSteps
+        {
+            get
+            {
+                return _n_laserSteps;
+            }
+            set
+            {
+                _n_laserSteps = value;
+                RaisePropertyChanged(nameof(NLaserSteps));
+            }
+        }
+
+        /// <summary>
+        /// The amplitude of the laser stimulus in mA
+        /// </summary>
+        public double LaserStim_mA
+        {
+            get
+            {
+                return _laserStim_mA;
+            }
+            set
+            {
+                _laserStim_mA = value;
+                RaisePropertyChanged(nameof(LaserStim_mA));
+            }
+        }
+
+        /// <summary>
+        /// The number of seconds the laser stimulus should last
+        /// </summary>
+        public uint LaserStim_StimS
+        {
+            get
+            {
+                return _laserStim_stimS;
+            }
+            set
+            {
+                _laserStim_stimS = value;
+                RaisePropertyChanged(nameof(LaserStim_StimS));
+            }
+        }
+
+        /// <summary>
+        /// The number of seconds in the laser stimulus pre and post phases
+        /// </summary>
+        public uint LaserStim_PrePostS
+        {
+            get
+            {
+                return _laserStim_prePostS;
+            }
+            set
+            {
+                _laserStim_prePostS = value;
+                RaisePropertyChanged(nameof(LaserStim_PrePostS));
+            }
+        }
 
         /// <summary>
         /// The pico-amps of the first current step
@@ -479,6 +615,26 @@ namespace PatchCommander.ViewModels
             HardwareManager.DaqBoard.Start((s, i) => { return genCurrentSteps(s, i, 1); }, totalSamples);
         }
 
+        public void RunLaserStepsCh1()
+        {
+            StimExpRunning = true;
+            //Stop any currently ongoing acquisition to launch fixed program
+            if (HardwareManager.DaqBoard.IsRunning)
+                StopAcquisition();
+            //Adjust board mode depending on whether we should hold voltage or not
+            VC_Channel1 = LaserHoldV;
+            ChannelViewModel.ChannelVMDict[0].VC = LaserHoldV;
+            //Subscribe to read finished signal
+            HardwareManager.DaqBoard.ReadThreadFinished += DaqBoard_ReadThreadFinished;
+            //Get everything ready to record
+            StartRecording(1);
+            //Notify and launch the board
+            if (Start != null)
+                Start.Invoke();
+            long totalSamples = (NLaserSteps) * (LaserStim_StimS + 2 * LaserStim_PrePostS) * HardwareSettings.DAQ.Rate;
+            HardwareManager.DaqBoard.Start((s, i) => { return genLaserSteps(s, i, 1); }, totalSamples);
+        }
+
         #endregion Button Handlers
 
         /// <summary>
@@ -565,6 +721,38 @@ namespace PatchCommander.ViewModels
         }
 
         /// <summary>
+        /// Generates  analog out samples for laser step presentation
+        /// </summary>
+        /// <param name="start_sample">The index of the first sample</param>
+        /// <param name="nSamples">The number of samples to generate</param>
+        /// <param name="channelIndex">The channel on which to generate samples</param>
+        /// <returns>For each analog out the appropriate voltage samples</returns>
+        private double[,] genLaserSteps(long start_sample, int nSamples, int channelIndex)
+        {
+            long pre_post_samples = LaserStim_PrePostS * HardwareSettings.DAQ.Rate;
+            long stim_samples = LaserStim_StimS * HardwareSettings.DAQ.Rate;
+            long step_samples = stim_samples + 2 * pre_post_samples;
+            double[,] samples = new double[3, nSamples];
+            for (int i = 0; i < nSamples; i++)
+            {
+                long curr_sample = start_sample + i;
+                long curr_step = curr_sample / step_samples;
+                //If we are supposed to hold, keep holding voltage constant throughout
+                if (LaserHoldV)
+                    samples[channelIndex - 1, i] = milliVoltsToAOVolts(LaserHoldingmV);
+                //If we are beyond the last step, or in the pre-phase, or in the post-phase set laser current to 0
+                if (curr_step >= NCurrSteps || curr_sample % step_samples < pre_post_samples || curr_sample % step_samples > pre_post_samples + stim_samples)
+                    samples[2, i] = 0;
+                else
+                {
+                    //Stim phase: Turn laser on
+                    samples[2, i] = laser_mA_toAOVolts(LaserStim_mA);
+                }
+            }
+            return samples;
+        }
+
+        /// <summary>
         /// Function to convert desired millivoltages in voltage clamp
         /// to corresponding analog out values to the amplifier
         /// </summary>
@@ -584,6 +772,22 @@ namespace PatchCommander.ViewModels
         private double picoAmpsToAOVolts(double pa)
         {
             return pa / 400;
+        }
+
+        /// <summary>
+        /// Function to conver a desired laser current in mA to
+        /// the appropriate analog out voltage
+        /// </summary>
+        /// <param name="ma"></param>
+        /// <returns></returns>
+        private double laser_mA_toAOVolts(double ma)
+        {
+            var v = ma / 4000 * 10;
+            if (v < 0)
+                v = 0;
+            else if (v > 10)
+                v = 10;
+            return v;
         }
 
         /// <summary>

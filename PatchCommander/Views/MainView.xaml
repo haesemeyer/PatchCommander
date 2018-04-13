@@ -54,7 +54,7 @@
                             <Rectangle Margin="151.099,8.293,323.619,36.666" Stroke="Black"/>
                             <Label x:Name="label1" Content="Current steps" HorizontalAlignment="Left" Margin="151.099,8.293,0,0" VerticalAlignment="Top" FontWeight="Bold"/>
                             <Button x:Name="btnCStepCh1" HorizontalAlignment="Left" Margin="239,0,0,39.666" VerticalAlignment="Bottom" Width="60.333" Click="btnCh1CurrSteps_Click" Content="Run" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}"/>
-                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="158.6,53.02,0,113.937" Width="72.499" Range="0, 30000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding CurrStep_PrePostMs}" d:LayoutOverrides="HorizontalAlignment" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" Interval="5">
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="158.6,53.02,0,113.937" Width="72.499" Range="0, 30000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding CurrStep_PrePostMs}" d:LayoutOverrides="HorizontalAlignment" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" Interval="50">
                                 <ni:NumericTextBoxDouble.ValueFormatter>
                                     <ni:GeneralValueFormatter Format="{}{0} ms" ShortFormat="{x:Null}"/>
                                 </ni:NumericTextBoxDouble.ValueFormatter>
@@ -80,6 +80,35 @@
                             <Label x:Name="label2_Copy2" Content="Last step" HorizontalAlignment="Left" Margin="236.099,78.253,0,81.038" d:LayoutOverrides="Height"/>
                             <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="319.6,53.02,0,113.937" Width="62" Range="2, 20, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding NCurrSteps}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}"/>
                             <Label x:Name="label2_Copy3" Content="N Steps" Margin="313.099,29.253,341.742,0" VerticalAlignment="Top" d:LayoutOverrides="Width"/>
+                            <Rectangle Margin="0,8.293,43.619,36.666" Stroke="Black" HorizontalAlignment="Right" Width="238"/>
+                            <Label x:Name="label1_Copy" Content="Laser steps" Margin="0,8.293,208.515,0" VerticalAlignment="Top" FontWeight="Bold" HorizontalAlignment="Right"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="439.6,53.02,0,113.937" Width="72.499" Range="0, 60, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding LaserStim_PrePostS}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} s" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2_Copy4" Content="Pre/post time" Margin="0,29.253,197.655,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="439.6,102.02,0,64.937" Width="72.499" Range="0, 60, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding LaserStim_StimS}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} s" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2_Copy5" Content="Step length" Margin="0,78.253,209.052,81.038" d:LayoutOverrides="Height" HorizontalAlignment="Right"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="520.6,53.02,0,113.937" Width="68.376" Range="0, 4000, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding LaserStim_mA}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" Interval="250">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} mA" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Label x:Name="label2_Copy6" Content="Step current" Margin="0,29.253,123.742,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="523.6,101.02,0,65.937" Width="62" Range="1, 20, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding NLaserSteps}" RenderTransformOrigin="2.378,0.693" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}"/>
+                            <Label x:Name="label2_Copy7" Content="N Steps" Margin="0,77.253,137.742,82.038" HorizontalAlignment="Right" d:LayoutOverrides="Height"/>
+                            <CheckBox x:Name="checkBox1" Content="Hold V" HorizontalAlignment="Right" Margin="0,54.566,54.347,0" VerticalAlignment="Top" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" IsChecked="{Binding LaserHoldV}"/>
+                            <ni:NumericTextBoxDouble HorizontalAlignment="Left" Margin="597.667,101.372,0,65.586" Width="62" Range="-100, 100, System.Double" InteractionMode="ArrowKeys, ScrollWheel, ButtonClicks, TextInput" AllowUndefinedValues="False" Value="{Binding LaserHoldingmV}" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}">
+                                <ni:NumericTextBoxDouble.ValueFormatter>
+                                    <ni:GeneralValueFormatter Format="{}{0} mV" ShortFormat="{x:Null}"/>
+                                </ni:NumericTextBoxDouble.ValueFormatter>
+                            </ni:NumericTextBoxDouble>
+                            <Button x:Name="btnCh1LaserSteps" Margin="0,0,128.385,39.666" VerticalAlignment="Bottom" Click="btnCh1LaserSteps_Click" Content="Run" IsEnabled="{Binding StimExpRunning, Converter={StaticResource NegateBoolConverter}}" HorizontalAlignment="Right" Width="60.333"/>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Channel 2">

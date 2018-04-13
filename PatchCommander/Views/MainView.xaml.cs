@@ -34,6 +34,11 @@ namespace PatchCommander.Views
             _viewModel.RunCurrentStepsCh1();
         }
 
+        private void btnCh1LaserSteps_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.RunLaserStepsCh1();
+        }
+
         protected override void WindowClosing(object sender, CancelEventArgs e)
         {
             //Clean up when the window closes
