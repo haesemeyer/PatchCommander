@@ -180,6 +180,10 @@ namespace PatchCommander.ViewModels
         /// </summary>
         double _laser_holding_mV;
 
+        const double mV_per_V = 20;
+
+        const double pA_per_V = 400;
+
         #endregion
 
         public MainViewModel()
@@ -606,8 +610,15 @@ namespace PatchCommander.ViewModels
             ChannelViewModel.ChannelVMDict[0].VC = false;
             //Subscribe to read finished signal
             HardwareManager.DaqBoard.ReadThreadFinished += DaqBoard_ReadThreadFinished;
-            //Get everything ready to record
-            StartRecording(1);
+            //Get everything ready to record - save experiment info as well
+            Dictionary<string, string> exp_info = new Dictionary<string, string>();
+            exp_info["Experiment type"] = "Current steps";
+            exp_info["n_steps"] = NCurrSteps.ToString();
+            exp_info["pre_post_ms"] = CurrStep_PrePostMs.ToString();
+            exp_info["stim_ms"] = CurrStep_StimMs.ToString();
+            exp_info["first_pA"] = CurrStep_FirstPico.ToString();
+            exp_info["last_pA"] = CurrStep_LastPico.ToString();
+            StartRecording(1, exp_info);
             //Notify and launch the board
             if (Start != null)
                 Start.Invoke();
@@ -626,8 +637,17 @@ namespace PatchCommander.ViewModels
             ChannelViewModel.ChannelVMDict[0].VC = LaserHoldV;
             //Subscribe to read finished signal
             HardwareManager.DaqBoard.ReadThreadFinished += DaqBoard_ReadThreadFinished;
-            //Get everything ready to record
-            StartRecording(1);
+            //Get everything ready to record - save experiment info as well
+            Dictionary<string, string> exp_info = new Dictionary<string, string>();
+            exp_info["Experiment type"] = "Laser steps";
+            exp_info["n_steps"] = NLaserSteps.ToString();
+            exp_info["pre_post_s"] = LaserStim_PrePostS.ToString();
+            exp_info["stim_s"] = LaserStim_StimS.ToString();
+            exp_info["stim_mA"] = LaserStim_mA.ToString();
+            exp_info["hold_V"] = LaserHoldV ? "True" : "False";
+            if (LaserHoldV)
+                exp_info["holding_mV"] = LaserHoldingmV.ToString();
+            StartRecording(1, exp_info);
             //Notify and launch the board
             if (Start != null)
                 Start.Invoke();
@@ -636,6 +656,24 @@ namespace PatchCommander.ViewModels
         }
 
         #endregion Button Handlers
+
+        /// <summary>
+        /// Write experiment information to an info file in form of a Pytyon dictionary initializer
+        /// </summary>
+        /// <param name="name">Experiment name</param>
+        /// <param name="infoData">Dictionary with the experiment information</param>
+        /// <param name="infoFile">The file-stream to write to</param>
+        private void WriteExperimentInfo(string name, Dictionary<string, string> infoData, TextWriter infoFile)
+        {
+            //Preamble
+            infoFile.WriteLine(name + "_info_d = {");
+            foreach (string k in infoData.Keys)
+            {
+                infoFile.WriteLine("'{0}': '{1}',", k, infoData[k]);
+            }
+            //Finish
+            infoFile.WriteLine("}");
+        }
 
         /// <summary>
         /// Generates necessary analog out samples
@@ -760,7 +798,7 @@ namespace PatchCommander.ViewModels
         /// <returns>The analog out voltage to apply</returns>
         private double milliVoltsToAOVolts(double mv)
         {
-            return mv / 20;
+            return mv / mV_per_V;
         }
 
         /// <summary>
@@ -771,7 +809,7 @@ namespace PatchCommander.ViewModels
         /// <returns>The analog out voltage to apply</returns>
         private double picoAmpsToAOVolts(double pa)
         {
-            return pa / 400;
+            return pa / pA_per_V;
         }
 
         /// <summary>
@@ -848,7 +886,7 @@ namespace PatchCommander.ViewModels
             IsAcquiring = false;
         }
 
-        void StartRecording(int channelIndex)
+        void StartRecording(int channelIndex, Dictionary<string, string> exp_info = null)
         {
             //Attach ourselves to the sample read event queue
             if(!IsRecordingCh1)
@@ -857,7 +895,22 @@ namespace PatchCommander.ViewModels
             {
                 _recordTask = new Task(() =>
                {
-                   BinaryWriter ch1File = new BinaryWriter(File.OpenWrite(CreateFilename(1) + ".data"));
+                   string data_file_name = CreateFilename(1) + ".data";
+                   //Write info file
+                   if (exp_info == null)
+                   {
+                       exp_info = new Dictionary<string, string>();
+                       exp_info["Experiment type"] = "Free run";
+                   }
+                   exp_info["datafile"] = Path.GetFileName(data_file_name);
+                   exp_info["daq_rate"] = HardwareSettings.DAQ.Rate.ToString();
+                   exp_info["channel"] = channelIndex.ToString();
+                   exp_info["mV_per_V"] = mV_per_V.ToString();
+                   exp_info["pA_per_V"] = pA_per_V.ToString();
+                   TextWriter infoWriter = new StreamWriter(CreateFilename(1) + ".info");
+                   WriteExperimentInfo(BaseFNameCh1, exp_info, infoWriter);
+                   infoWriter.Dispose();
+                   BinaryWriter ch1File = new BinaryWriter(File.OpenWrite(data_file_name));
                    while (true)
                    {
                        ChannelReadDataChunk chnk = _record_dataQueue.Consume();
