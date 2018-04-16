@@ -22,5 +22,125 @@ namespace PatchCommander.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public uint NCurrSteps {
+            get {
+                return ((uint)(this["NCurrSteps"]));
+            }
+            set {
+                this["NCurrSteps"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1000")]
+        public uint CurrStep_PrePostMs {
+            get {
+                return ((uint)(this["CurrStep_PrePostMs"]));
+            }
+            set {
+                this["CurrStep_PrePostMs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10000")]
+        public uint CurrStep_StimMs {
+            get {
+                return ((uint)(this["CurrStep_StimMs"]));
+            }
+            set {
+                this["CurrStep_StimMs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public double CurrStep_FirstPico {
+            get {
+                return ((double)(this["CurrStep_FirstPico"]));
+            }
+            set {
+                this["CurrStep_FirstPico"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("25")]
+        public double CurrStep_LastPico {
+            get {
+                return ((double)(this["CurrStep_LastPico"]));
+            }
+            set {
+                this["CurrStep_LastPico"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public uint NLaserSteps {
+            get {
+                return ((uint)(this["NLaserSteps"]));
+            }
+            set {
+                this["NLaserSteps"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-70")]
+        public double LaserHoldingmV {
+            get {
+                return ((double)(this["LaserHoldingmV"]));
+            }
+            set {
+                this["LaserHoldingmV"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2000")]
+        public double LaserStim_mA {
+            get {
+                return ((double)(this["LaserStim_mA"]));
+            }
+            set {
+                this["LaserStim_mA"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("20")]
+        public uint LaserStim_StimS {
+            get {
+                return ((uint)(this["LaserStim_StimS"]));
+            }
+            set {
+                this["LaserStim_StimS"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public uint LaserStim_PrePostS {
+            get {
+                return ((uint)(this["LaserStim_PrePostS"]));
+            }
+            set {
+                this["LaserStim_PrePostS"] = value;
+            }
+        }
     }
 }

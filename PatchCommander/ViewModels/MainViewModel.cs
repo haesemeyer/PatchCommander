@@ -189,13 +189,6 @@ namespace PatchCommander.ViewModels
         public MainViewModel()
         {
             BaseFNameCh1 = "Fish_01";
-            if (IsInDesignMode)
-                return;
-            _record_dataQueue = new ProducerConsumer<ChannelReadDataChunk>(HardwareSettings.DAQ.Rate);
-            //Subscribe to channel view events
-            ChannelViewModel.ClampModeChanged += ClampModeChanged;
-            ChannelViewModel.SealTestChanged += SealTestChanged;
-            //Set defaults for current stimulation
             NCurrSteps = 5;
             CurrStep_PrePostMs = 1000;
             CurrStep_StimMs = 10000;
@@ -207,6 +200,13 @@ namespace PatchCommander.ViewModels
             LaserStim_mA = 2000;
             LaserStim_StimS = 20;
             LaserStim_PrePostS = 10;
+            if (IsInDesignMode)
+                return;
+            _record_dataQueue = new ProducerConsumer<ChannelReadDataChunk>(HardwareSettings.DAQ.Rate);
+            //Subscribe to channel view events
+            ChannelViewModel.ClampModeChanged += ClampModeChanged;
+            ChannelViewModel.SealTestChanged += SealTestChanged;
+            LoadUserSettings();
         }
 
         #region Properties
@@ -658,6 +658,41 @@ namespace PatchCommander.ViewModels
         #endregion Button Handlers
 
         /// <summary>
+        /// Load paradigm settings from user settings
+        /// </summary>
+        private void LoadUserSettings()
+        {
+            NCurrSteps = Properties.Settings.Default.NCurrSteps;
+            CurrStep_PrePostMs = Properties.Settings.Default.CurrStep_PrePostMs;
+            CurrStep_StimMs = Properties.Settings.Default.CurrStep_StimMs;
+            CurrStep_FirstPico = Properties.Settings.Default.CurrStep_FirstPico;
+            CurrStep_LastPico = Properties.Settings.Default.CurrStep_LastPico;
+            NLaserSteps = Properties.Settings.Default.NLaserSteps;
+            LaserHoldingmV = Properties.Settings.Default.LaserHoldingmV;
+            LaserStim_mA = Properties.Settings.Default.LaserStim_mA;
+            LaserStim_StimS = Properties.Settings.Default.LaserStim_StimS;
+            LaserStim_PrePostS = Properties.Settings.Default.LaserStim_PrePostS;
+        }
+
+        /// <summary>
+        /// Save paradigm settings to user settings
+        /// </summary>
+        private void SaveUserSettings()
+        {
+            Properties.Settings.Default.NCurrSteps = NCurrSteps;
+            Properties.Settings.Default.CurrStep_PrePostMs = CurrStep_PrePostMs;
+            Properties.Settings.Default.CurrStep_StimMs = CurrStep_StimMs;
+            Properties.Settings.Default.CurrStep_FirstPico = CurrStep_FirstPico;
+            Properties.Settings.Default.CurrStep_LastPico = CurrStep_LastPico;
+            Properties.Settings.Default.NLaserSteps = NLaserSteps;
+            Properties.Settings.Default.LaserHoldingmV = LaserHoldingmV;
+            Properties.Settings.Default.LaserStim_mA = LaserStim_mA;
+            Properties.Settings.Default.LaserStim_StimS = LaserStim_StimS;
+            Properties.Settings.Default.LaserStim_PrePostS = LaserStim_PrePostS;
+            Properties.Settings.Default.Save();
+        }
+
+        /// <summary>
         /// Write experiment information to an info file in form of a Pytyon dictionary initializer
         /// </summary>
         /// <param name="name">Experiment name</param>
@@ -1069,6 +1104,7 @@ namespace PatchCommander.ViewModels
                 StopAcquisition();
             if (HardwareManager.DaqBoard.IsRunning)
                 StopAcquisition();
+            SaveUserSettings();
         }
     }
 }

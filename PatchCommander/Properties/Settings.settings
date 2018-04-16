@@ -1,7 +1,36 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PatchCommander.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="NCurrSteps" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
+    <Setting Name="CurrStep_PrePostMs" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">1000</Value>
+    </Setting>
+    <Setting Name="CurrStep_StimMs" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">10000</Value>
+    </Setting>
+    <Setting Name="CurrStep_FirstPico" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="CurrStep_LastPico" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">25</Value>
+    </Setting>
+    <Setting Name="NLaserSteps" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
+    <Setting Name="LaserHoldingmV" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">-70</Value>
+    </Setting>
+    <Setting Name="LaserStim_mA" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">2000</Value>
+    </Setting>
+    <Setting Name="LaserStim_StimS" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">20</Value>
+    </Setting>
+    <Setting Name="LaserStim_PrePostS" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>
